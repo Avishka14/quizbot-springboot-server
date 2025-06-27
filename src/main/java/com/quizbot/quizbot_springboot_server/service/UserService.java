@@ -1,6 +1,8 @@
 package com.quizbot.quizbot_springboot_server.service;
 
+import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserDTO;
+import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import org.modelmapper.TypeToken;
@@ -9,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -28,6 +31,18 @@ public class UserService {
     public List<UserDTO> getAllUsers(){
         List<User> userList = userRepo.findAll();
         return modelMapper.map(userList , new TypeToken<List <UserDTO>>() {} .getType());
+    }
+
+    public UserResponseDTO logIn(LoginRequestDTO loginRequestDTO){
+        Optional<User> optionalUser = userRepo.findByEmail(loginRequestDTO.getEmail());
+
+        if(optionalUser.isPresent()){
+            User user = optionalUser.get();
+            if(user.getPassword().equals(loginRequestDTO.getPassword())){
+                return modelMapper.map(user, UserResponseDTO.class);
+            }
+        }
+          return null;
     }
 
 }
