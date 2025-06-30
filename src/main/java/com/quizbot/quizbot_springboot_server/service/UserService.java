@@ -33,6 +33,18 @@ public class UserService {
         return modelMapper.map(userList , new TypeToken<List <UserDTO>>() {} .getType());
     }
 
+    public UserDTO getUserById(Long userId){
+        Optional<User> userOptional = userRepo.findById(userId);
+
+        if(userOptional.isEmpty()){
+            return null;
+        }
+
+        User user  = userOptional.get();
+        return modelMapper.map(user , UserDTO.class);
+
+    }
+
     public UserResponseDTO logIn(LoginRequestDTO loginRequestDTO){
         Optional<User> optionalUser = userRepo.findByEmail(loginRequestDTO.getEmail());
 
