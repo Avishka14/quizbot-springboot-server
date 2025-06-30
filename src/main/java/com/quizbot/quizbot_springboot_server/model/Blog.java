@@ -17,7 +17,11 @@ public class Blog {
     private Long id;
 
     private String title;
+    private String category;
+
+    @Column(columnDefinition = "TEXT")
     private String description;
+
     private String coverImage;
 
     private String userid;
