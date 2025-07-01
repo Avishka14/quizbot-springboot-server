@@ -26,7 +26,18 @@ public class BlogServices {
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
                 .collect(Collectors.toList());
 
-
     }
+
+    public BlogDto updateBlog(String id, BlogDto blogDTO) {
+        Blog existingBlog = blogRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Blog not found"));
+
+        modelMapper.map(blogDTO, existingBlog);
+
+        Blog updatedBlog = blogRepo.save(existingBlog);
+
+        return modelMapper.map(updatedBlog, BlogDto.class);
+    }
+
 
 }
