@@ -1,7 +1,9 @@
 package com.quizbot.quizbot_springboot_server.controller;
 
+import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
+import com.quizbot.quizbot_springboot_server.service.BlogServices;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -23,6 +26,9 @@ public class BlogController {
 
     @Autowired
     private BlogRepo blogRepo;
+
+    @Autowired
+    private BlogServices blogServices;
 
     private final String uploadDir = "uploads";
 
@@ -60,7 +66,21 @@ public class BlogController {
                     .body(Map.of("error", "Failed to upload file"));
         }
 
-
     }
 
+
+    @GetMapping("/getblog/{userid}")
+    public ResponseEntity<List<BlogDto>> getBlogsByUser(@PathVariable String userid) {
+        System.out.println("Fetching blogs for userid: " + userid);
+        List<BlogDto> blogs;
+        try {
+            blogs = blogServices.getArticlesByUserId(userid);
+            System.out.println("Found " + blogs.size() + " blogs.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+        return ResponseEntity.ok(blogs);
+
+    }
 }
