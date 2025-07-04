@@ -120,7 +120,6 @@ public class BlogController {
             blog.setCategory(category);
             blog.setDescription(content);
             blog.setUserid(userId);
-
             // Save updated blog
             blogRepo.save(blog);
 
