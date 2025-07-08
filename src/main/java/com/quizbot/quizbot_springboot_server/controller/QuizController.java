@@ -4,12 +4,10 @@ import com.quizbot.quizbot_springboot_server.dto.QuizQuestionDTO;
 import com.quizbot.quizbot_springboot_server.service.DeepSeekService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/quiz")
@@ -19,15 +17,14 @@ public class QuizController {
     private final DeepSeekService deepSeekService;
 
     @PostMapping("/getquiz")
-    public ResponseEntity<?> generatedQuiz(
-            @RequestParam String topic,
-            @RequestParam String userId
-    ) {
+    public ResponseEntity<?> generatedQuiz(@RequestBody Map<String, String> request) {
+        String topic = request.get("topic");
+        String userId = request.get("userId");
+
         try {
             List<QuizQuestionDTO> quiz = deepSeekService.generateQuizAndSave(topic, userId);
             return ResponseEntity.ok(quiz);
         } catch (Exception e) {
-            // log the exception (use a logger in real projects)
             e.printStackTrace();
             return ResponseEntity.status(500).body("Internal Server Error: " + e.getMessage());
         }
