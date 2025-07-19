@@ -9,20 +9,14 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Table(name = "blogs")
-public class Blog {
+@Table(name = "desribes")
+public class Describe {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String title;
-    private String category;
-
     @Column(columnDefinition = "TEXT")
-    private String description;
-
-    private String coverImage;
-
+    private String topic;
     private String userid;
-
 }
