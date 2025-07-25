@@ -131,4 +131,20 @@ public class BlogController {
         }
     }
 
+    @GetMapping("/getall")
+    public ResponseEntity<List<BlogDto>> getAllBlogs(){
+        List<BlogDto> blogs;
+        try {
+
+           blogs = blogServices.getAllBlogs();
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+
+         return ResponseEntity.ok(blogs);
+    }
+
 }

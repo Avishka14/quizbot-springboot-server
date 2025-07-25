@@ -39,5 +39,14 @@ public class BlogServices {
         return modelMapper.map(updatedBlog, BlogDto.class);
     }
 
+    public List<BlogDto> getAllBlogs(){
+        List<Blog> blogs = blogRepo.findAll();
+
+        return blogs.stream()
+                .map(blog -> modelMapper.map(blog, BlogDto.class))
+                .collect(Collectors.toList());
+
+    }
+
 
 }
