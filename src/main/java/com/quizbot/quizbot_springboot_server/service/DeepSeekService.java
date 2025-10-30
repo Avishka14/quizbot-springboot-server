@@ -50,7 +50,7 @@ public class DeepSeekService {
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
         Map<String, Object> body = Map.of(
-                "model", "deepseek/deepseek-r1:free",
+                "model", "tngtech/deepseek-r1t2-chimera:free",
                 "messages", List.of(Map.of("role", "user", "content", prompt))
         );
 
@@ -81,10 +81,8 @@ public class DeepSeekService {
 
             String content = root.path("choices").get(0).path("message").path("content").asText();
 
-            // Clean triple backticks (``` or ```json) from LLM-style output
-            if (content.startsWith("```")) {
-                content = content.replaceAll("(?s)^```(?:json)?\\s*|\\s*```$", "");
-            }
+
+            content = content.replaceAll("(?s)```json|```", "").trim();
 
             return Arrays.asList(mapper.readValue(content, QuizQuestionDTO[].class));
         } catch (Exception e) {
@@ -106,23 +104,20 @@ public class DeepSeekService {
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
         Map<String, Object> body = Map.of(
-                "model", "deepseek/deepseek-r1:free",
+                "model", "tngtech/deepseek-r1t2-chimera:free",
                 "messages", List.of(Map.of("role", "user", "content", prompt))
         );
 
         HttpEntity<?> request = new HttpEntity<>(body, headers);
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        // Extract the description
         List<DescribeDto> dtos = extractDescriptionListFromResponse(response.getBody());
 
-        // Save topic and userId only (not description)
         Describe d = new Describe();
         d.setTopic(topic);
         d.setUserid(userId);
         describeRepo.save(d);
 
-        // Set topic and userId in the response DTOs
         return dtos.stream().peek(dto -> {
             dto.setTopic(topic);
             dto.setUserid(userId);
@@ -141,13 +136,10 @@ public class DeepSeekService {
                 content = content.replaceAll("(?s)^```(?:json)?\\s*|\\s*```$", "");
             }
 
-            // Parse JSON array of strings
             List<String> sentences = Arrays.asList(mapper.readValue(content, String[].class));
 
-            // Join sentences to form full description text
             String fullDescription = String.join(" ", sentences);
 
-            // Create a single DescribeDto with full description
             DescribeDto dto = new DescribeDto();
             dto.setDescription(fullDescription);
 
