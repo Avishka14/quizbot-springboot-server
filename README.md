@@ -1,4 +1,4 @@
-# QuizBot Spring Boot Server
+# QuizBot Spring Boot 
 
 A **Spring Boot backend** for **QuizBot**, providing REST APIs for user management, AI-powered quiz generation, blog articles, and topic descriptions.  
 It uses **MySQL** for persistence and integrates with **DeepSeek / OpenRouter** for AI-generated quizzes and descriptions.
