@@ -19,9 +19,6 @@ It uses **MySQL** for persistence and integrates with **DeepSeek / OpenRouter** 
 - **Topic Descriptions**  
   Generate and store topic descriptions using **DeepSeek AI**.
 
-- **File Uploads**  
-  Handles image uploads for blogs, serving them from the `/files/` endpoint.
-
 
 ---
 
@@ -85,7 +82,7 @@ file.upload-dir=files
 
 - **Spring Boot**
 
-- **Spring Data JPA (Hibernate)**
+- **Spring Data JPA**
 
 - **MySQL**
 
