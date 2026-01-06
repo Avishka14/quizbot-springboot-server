@@ -27,6 +27,8 @@ public class User {
 
     private String joined_date;
 
+    private String role;
+
     @PrePersist
     protected void onCreate(){
         this.joined_date = String.valueOf(LocalDate.now());
