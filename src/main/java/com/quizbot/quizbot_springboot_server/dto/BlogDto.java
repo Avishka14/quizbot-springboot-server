@@ -25,4 +25,7 @@ public class BlogDto {
     private String coverImage;
 
     private String userid;
+
+    private boolean approval;
+
 }

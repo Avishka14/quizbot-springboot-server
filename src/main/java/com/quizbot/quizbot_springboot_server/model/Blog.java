@@ -25,4 +25,6 @@ public class Blog {
 
     private String userid;
 
+    private boolean approval;
+
 }
