@@ -1,6 +1,7 @@
 package com.quizbot.quizbot_springboot_server.controller;
 
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
+import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
@@ -44,29 +45,26 @@ public class BlogController {
             ){
 
         try {
-            // Save file to folder
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path path = Paths.get(uploadDir, fileName);
-            Files.createDirectories(path.getParent());
-            Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
-            String fileUrl = "/files/" + fileName;
+            BlogDto blogDto = new BlogDto();
+            blogDto.setTitle(title);
+            blogDto.setCategory(category);
+            blogDto.setDescription(content);
+            blogDto.setUserid(userId);
 
-            // Save blog info to DB
-            Blog blog = new Blog();
-            blog.setTitle(title);
-            blog.setCategory(category);
-            blog.setDescription(content);
-            blog.setCoverImage(fileUrl);
-            blog.setUserid(userId);
-            blogRepo.save(blog);
+            ResponseDTO response = blogServices.createNewBlog(blogDto , file);
 
-            return ResponseEntity.ok().body(Map.of("message", "Article uploaded successfully!"));
+            if(response.isStatus()){
+                return ResponseEntity.ok(response);
+            }else{
+                return ResponseEntity.internalServerError().build();
+            }
 
-        } catch (IOException e) {
+        }catch (Exception e){
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload file"));
         }
+
 
     }
 
