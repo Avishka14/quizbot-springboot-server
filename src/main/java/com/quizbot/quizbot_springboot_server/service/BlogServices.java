@@ -5,6 +5,8 @@ import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,18 +33,42 @@ public class BlogServices {
     private ModelMapper modelMapper;
 
     private final String uploadDir = "uploads";
+    private static final long maxFileSize = 5 * 1024 * 1024;
+    private static final Logger logger = LoggerFactory.getLogger(BlogServices.class);
+
 
     public ResponseDTO createNewBlog(BlogDto blogDto , MultipartFile file ){
 
+        if (blogDto.getTitle() == null || blogDto.getTitle().isBlank()) {
+            return new ResponseDTO(false, "Title cannot be empty");
+        }
+
+        if (blogDto.getTitle().length() > 100) {
+            return new ResponseDTO(false, "Title must be 100 characters or less");
+        }
+
+        if (file == null || file.isEmpty()) {
+            return new ResponseDTO(false, "Cover image is required");
+        }
+
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            return new ResponseDTO(false, "Only image files are allowed");
+        }
+
+        if (file.getSize() > maxFileSize) {
+            return new ResponseDTO(false, "Image size must be less than 5MB");
+        }
+
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path path = Paths.get(uploadDir, fileName);
+        String fileUrl = "/files/" + fileName;
+
+
         try{
-            String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path path = Paths.get(uploadDir, fileName);
+
             Files.createDirectories(path.getParent());
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
-            String fileUrl = "/files/" + fileName;
-
-            // Save blog info to DB
             Blog blog = new Blog();
             blog.setTitle(blogDto.getTitle());
             blog.setCategory(blogDto.getCategory());
@@ -52,11 +78,20 @@ public class BlogServices {
             blog.setApproval(false);
             blogRepo.save(blog);
 
-            return new ResponseDTO(true);
+            return new ResponseDTO(true , "Blog Created Success");
 
 
-        }catch (IOException ioException){
-          return  new ResponseDTO(false);
+        }catch (Exception exception){
+
+            logger.error("Error while creating the blog Exception: ", exception);
+
+            try{
+             Files.deleteIfExists(path);
+            }catch (IOException e) {
+                logger.error("Failed to delete temporary file: {}", path, e);
+            }
+            logger.error("Error while creating the blog", exception);
+            return new ResponseDTO(false, "Error while creating the blog");
 
         }
 
@@ -64,7 +99,6 @@ public class BlogServices {
 
     public List<BlogDto> getArticlesByUserId(String userId){
         List<Blog> blogs = blogRepo.findByUserid(userId);
-
 
 
         return blogs.stream()

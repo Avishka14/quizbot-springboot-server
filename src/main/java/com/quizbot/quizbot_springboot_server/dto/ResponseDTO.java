@@ -9,4 +9,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ResponseDTO {
     private boolean status;
+    private String message;
+
 }

@@ -5,6 +5,8 @@ import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -35,8 +37,10 @@ public class BlogController {
 
     private final String uploadDir = "uploads";
 
+    private static final Logger logger = LoggerFactory.getLogger(BlogController.class);
+
     @PostMapping("/upload")
-    public ResponseEntity<?> hanldeBlogUpload(
+    public ResponseEntity<?> hanldeBlogCreate(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("category") String category,
@@ -57,10 +61,11 @@ public class BlogController {
             if(response.isStatus()){
                 return ResponseEntity.ok(response);
             }else{
-                return ResponseEntity.internalServerError().build();
+                return ResponseEntity.badRequest().body(response);
             }
 
         }catch (Exception e){
+            logger.error("Error while ceating blog Error :" , e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload file"));
         }
