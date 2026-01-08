@@ -65,7 +65,7 @@ public class BlogController {
             }
 
         }catch (Exception e){
-            logger.error("Error while ceating blog Error :" , e);
+            logger.error("Error while creating blog Error :" , e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload file"));
         }
@@ -99,39 +99,28 @@ public class BlogController {
             @RequestParam("userid") String userId
     ) {
         try {
-            // Find existing blog by id (handle if not found)
-            Optional<Blog> optionalBlog = blogRepo.findById(id);
-            if (optionalBlog.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(Map.of("error", "Blog not found"));
-            }
-            Blog blog = optionalBlog.get();
 
-            // If new file uploaded, save it and update coverImage path
-            if (file != null && !file.isEmpty()) {
-                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-                Path path = Paths.get(uploadDir, fileName);
-                Files.createDirectories(path.getParent());
-                Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+            BlogDto blogDto = new BlogDto();
+            blogDto.setId(id);
+            blogDto.setTitle(title);
+            blogDto.setCategory(category);
+            blogDto.setDescription(content);
+            blogDto.setUserid(userId);
 
-                String fileUrl = "/files/" + fileName;
-                blog.setCoverImage(fileUrl);
+            ResponseDTO response = blogServices.updateExistingBlog(blogDto , file);
+
+            if(response.isStatus()){
+                return ResponseEntity.ok(response);
+            }else{
+                return ResponseEntity.badRequest().body(response);
             }
 
-            // Update other fields
-            blog.setTitle(title);
-            blog.setCategory(category);
-            blog.setDescription(content);
-            blog.setUserid(userId);
-            // Save updated blog
-            blogRepo.save(blog);
-
-            return ResponseEntity.ok(Map.of("message", "Article updated successfully!"));
-
-        } catch (IOException e) {
+        }catch (Exception e){
+            logger.error("Error while updating blog Error :" , e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to upload file"));
+                    .body(Map.of("error", "Failed to update file"));
         }
+
     }
 
     @GetMapping("/getall")
