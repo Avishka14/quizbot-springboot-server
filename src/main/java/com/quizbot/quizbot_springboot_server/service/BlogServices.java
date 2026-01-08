@@ -20,6 +20,7 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -63,7 +64,6 @@ public class BlogServices {
         Path path = Paths.get(uploadDir, fileName);
         String fileUrl = "/files/" + fileName;
 
-
         try{
 
             Files.createDirectories(path.getParent());
@@ -90,7 +90,7 @@ public class BlogServices {
             }catch (IOException e) {
                 logger.error("Failed to delete temporary file: {}", path, e);
             }
-            logger.error("Error while creating the blog", exception);
+
             return new ResponseDTO(false, "Error while creating the blog");
 
         }
@@ -124,6 +124,81 @@ public class BlogServices {
         return blogs.stream()
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
                 .collect(Collectors.toList());
+
+    }
+
+    public ResponseDTO updateExistingBlog(BlogDto blogDto , MultipartFile file){
+
+        if(blogDto.getId() == null || blogDto.getId().isBlank()){
+            logger.error("Blog id is missing from api call");
+            return new ResponseDTO(false, "Blog Id is Missing");
+        }
+
+        if (blogDto.getTitle() == null || blogDto.getTitle().isBlank()) {
+            return new ResponseDTO(false, "Title cannot be empty");
+        }
+
+        if (blogDto.getTitle().length() > 100) {
+            return new ResponseDTO(false, "Title must be 100 characters or less");
+        }
+
+        if (file == null || file.isEmpty()) {
+            return new ResponseDTO(false, "Cover image is required");
+        }
+
+        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
+            return new ResponseDTO(false, "Only image files are allowed");
+        }
+
+        if (file.getSize() > maxFileSize) {
+            return new ResponseDTO(false, "Image size must be less than 5MB");
+        }
+
+        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path path = Paths.get(uploadDir, fileName);
+        String fileUrl = "/files/" + fileName;
+
+        try{
+
+            Optional<Blog> optionalBlog = blogRepo.findById(blogDto.getId());
+            if(optionalBlog.isEmpty()){
+                logger.info("Invalid Blog id or Deleted blog passed ID: {}" , blogDto.getId());
+                return new ResponseDTO(false , "Blog cannot be found");
+             }
+
+            Blog blog = optionalBlog.get();
+
+            if (file != null && !file.isEmpty()) {
+
+                Files.createDirectories(path.getParent());
+                Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+                blog.setCoverImage(fileUrl);
+            }
+
+            blog.setTitle(blogDto.getTitle());
+            blog.setDescription(blog.getDescription());
+            blog.setCategory(blog.getCategory());
+            blog.setApproval(false);
+            blog.setUserid(blogDto.getUserid());
+
+            blogRepo.save(blog);
+            return new ResponseDTO(true , "Updating Success");
+
+
+        } catch (Exception e) {
+            logger.error("Error while updating blog Error: ",e);
+
+            try{
+                Files.deleteIfExists(path);
+            }catch (IOException exception) {
+                logger.error("Failed to delete temporary file: {}", path, exception);
+            }
+
+            return new ResponseDTO(false , "Internal server error Occurred");
+        }
+
+
+
 
     }
 
