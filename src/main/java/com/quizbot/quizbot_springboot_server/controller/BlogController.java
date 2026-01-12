@@ -2,27 +2,16 @@ package com.quizbot.quizbot_springboot_server.controller;
 
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
-import com.quizbot.quizbot_springboot_server.model.Blog;
-import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @RestController
 @RequestMapping("api/v1/blog")
@@ -30,66 +19,60 @@ import java.util.UUID;
 public class BlogController {
 
     @Autowired
-    private BlogRepo blogRepo;
-
-    @Autowired
     private BlogServices blogServices;
-
-    private final String uploadDir = "uploads";
 
     private static final Logger logger = LoggerFactory.getLogger(BlogController.class);
 
     @PostMapping("/upload")
-    public ResponseEntity<?> hanldeBlogCreate(
+    public ResponseEntity<?> handleBlogCreate(
             @RequestParam("file") MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("category") String category,
             @RequestParam("content") String content,
             @RequestParam("userId") String userId
-            ){
-
+    ) {
         try {
-
             BlogDto blogDto = new BlogDto();
             blogDto.setTitle(title);
             blogDto.setCategory(category);
             blogDto.setDescription(content);
             blogDto.setUserid(userId);
 
-            ResponseDTO response = blogServices.createNewBlog(blogDto , file);
+            ResponseDTO response = blogServices.createNewBlog(blogDto, file);
 
-            if(response.isStatus()){
+            if (response.isStatus()) {
                 return ResponseEntity.ok(response);
-            }else{
+            } else {
+                logger.warn("Failed to create blog for user: {}", userId);
                 return ResponseEntity.badRequest().body(response);
             }
 
-        }catch (Exception e){
-            logger.error("Error while creating blog Error :" , e);
+        } catch (Exception e) {
+            logger.error("Error while creating blog for user: {}", userId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload file"));
         }
-
-
     }
-
 
     @GetMapping("/getblog/{userid}")
-    public ResponseEntity<List<BlogDto>> getBlogsByUser(@PathVariable String userid) {
-        System.out.println("Fetching blogs for userid: " + userid);
-        List<BlogDto> blogs;
+    public ResponseEntity<?> getBlogsByUser(@PathVariable String userid) {
         try {
-            blogs = blogServices.getArticlesByUserId(userid);
-            System.out.println("Found " + blogs.size() + " blogs.");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-        return ResponseEntity.ok(blogs);
 
+            List<BlogDto> blogs = blogServices.getArticlesByUserId(userid);
+            return ResponseEntity.ok(blogs);
+
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "User not found"));
+
+        } catch (Exception e) {
+            logger.error("Error fetching blogs for userid: {}", userid, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch blogs"));
+        }
     }
 
-    @PostMapping("/updateblog/{id}")
+    @PutMapping("/updateblog/{id}")
     public ResponseEntity<?> handleBlogUpdate(
             @PathVariable String id,
             @RequestParam(value = "coverImage", required = false) MultipartFile file,
@@ -107,36 +90,54 @@ public class BlogController {
             blogDto.setDescription(content);
             blogDto.setUserid(userId);
 
-            ResponseDTO response = blogServices.updateExistingBlog(blogDto , file);
+            ResponseDTO response = blogServices.updateExistingBlog(blogDto, file);
 
-            if(response.isStatus()){
+            if (response.isStatus()) {
                 return ResponseEntity.ok(response);
-            }else{
+            } else {
+                logger.warn("Failed to update blog with id: {}", id);
                 return ResponseEntity.badRequest().body(response);
             }
 
-        }catch (Exception e){
-            logger.error("Error while updating blog Error :" , e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to update file"));
-        }
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Blog not found"));
 
+        } catch (Exception e) {
+            logger.error("Error while updating blog with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to update blog"));
+        }
     }
 
     @GetMapping("/getall")
-    public ResponseEntity<List<BlogDto>> getAllBlogs(){
-        List<BlogDto> blogs;
+    public ResponseEntity<?> getAllBlogs() {
         try {
 
-           blogs = blogServices.getAllBlogs();
+            List<BlogDto> blogs = blogServices.getAllBlogs();
+            return ResponseEntity.ok(blogs);
 
-
-        }catch (Exception e){
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        } catch (Exception e) {
+            logger.error("Error fetching all blogs", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Failed to fetch blogs"));
         }
-
-         return ResponseEntity.ok(blogs);
     }
 
+    @PutMapping("/approve/{id}")
+    public ResponseEntity<?> approveBlog(@PathVariable String id) {
+        try {
+            ResponseDTO responseDTO = blogServices.approveBlog(id);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Blog not found"));
+
+        } catch (Exception e) {
+            logger.error("Error approving blog with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An unexpected error occurred"));
+        }
+    }
 }
