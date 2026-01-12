@@ -4,25 +4,23 @@ import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
+import com.quizbot.quizbot_springboot_server.utility.HelperMethods;
+import lombok.experimental.Helper;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
+
+
 
 @Service
 public class BlogServices {
@@ -33,39 +31,25 @@ public class BlogServices {
     @Autowired
     private ModelMapper modelMapper;
 
+    @Autowired
+    private HelperMethods helperMethods;
+
     private final String uploadDir = "uploads";
-    private static final long maxFileSize = 5 * 1024 * 1024;
+    private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
     private static final Logger logger = LoggerFactory.getLogger(BlogServices.class);
 
+    public ResponseDTO createNewBlog(BlogDto blogDto, MultipartFile file) {
 
-    public ResponseDTO createNewBlog(BlogDto blogDto , MultipartFile file ){
-
-        if (blogDto.getTitle() == null || blogDto.getTitle().isBlank()) {
-            return new ResponseDTO(false, "Title cannot be empty");
-        }
-
-        if (blogDto.getTitle().length() > 100) {
-            return new ResponseDTO(false, "Title must be 100 characters or less");
-        }
-
-        if (file == null || file.isEmpty()) {
-            return new ResponseDTO(false, "Cover image is required");
-        }
-
-        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            return new ResponseDTO(false, "Only image files are allowed");
-        }
-
-        if (file.getSize() > maxFileSize) {
-            return new ResponseDTO(false, "Image size must be less than 5MB");
+        ResponseDTO validationError = helperMethods.validateBlogInput(blogDto, file, true);
+        if (validationError != null) {
+            return validationError;
         }
 
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
         Path path = Paths.get(uploadDir, fileName);
         String fileUrl = "/files/" + fileName;
 
-        try{
-
+        try {
             Files.createDirectories(path.getParent());
             Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
 
@@ -76,131 +60,107 @@ public class BlogServices {
             blog.setCoverImage(fileUrl);
             blog.setUserid(blogDto.getUserid());
             blog.setApproval(false);
+
             blogRepo.save(blog);
 
-            return new ResponseDTO(true , "Blog Created Success");
+            logger.info("Blog created successfully for user: {}", blogDto.getUserid());
+            return new ResponseDTO(true, "Blog Created Success");
 
-
-        }catch (Exception exception){
-
-            logger.error("Error while creating the blog Exception: ", exception);
-
-            try{
-             Files.deleteIfExists(path);
-            }catch (IOException e) {
-                logger.error("Failed to delete temporary file: {}", path, e);
-            }
-
+        } catch (Exception exception) {
+            logger.error("Error while creating the blog", exception);
+            helperMethods.deleteFileIfExists(path);
             return new ResponseDTO(false, "Error while creating the blog");
-
         }
-
     }
 
-    public List<BlogDto> getArticlesByUserId(String userId){
+    public List<BlogDto> getArticlesByUserId(String userId) {
+        logger.info("Fetching articles for user: {}", userId);
         List<Blog> blogs = blogRepo.findByUserid(userId);
-
 
         return blogs.stream()
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
                 .collect(Collectors.toList());
-
     }
 
-    public BlogDto updateBlog(String id, BlogDto blogDTO) {
-        Blog existingBlog = blogRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Blog not found"));
-
-        modelMapper.map(blogDTO, existingBlog);
-
-        Blog updatedBlog = blogRepo.save(existingBlog);
-
-        return modelMapper.map(updatedBlog, BlogDto.class);
-    }
-
-    public List<BlogDto> getAllBlogs(){
+    public List<BlogDto> getAllBlogs() {
+        logger.info("Fetching all blogs");
         List<Blog> blogs = blogRepo.findAll();
 
         return blogs.stream()
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
                 .collect(Collectors.toList());
-
     }
 
-    public ResponseDTO updateExistingBlog(BlogDto blogDto , MultipartFile file){
+    public ResponseDTO updateExistingBlog(BlogDto blogDto, MultipartFile file) {
 
-        if(blogDto.getId() == null || blogDto.getId().isBlank()){
+        if (blogDto.getId() == null || blogDto.getId().isBlank()) {
             logger.error("Blog id is missing from api call");
             return new ResponseDTO(false, "Blog Id is Missing");
         }
 
-        if (blogDto.getTitle() == null || blogDto.getTitle().isBlank()) {
-            return new ResponseDTO(false, "Title cannot be empty");
+        Optional<Blog> optionalBlog = blogRepo.findById(blogDto.getId());
+        if (optionalBlog.isEmpty()) {
+            logger.warn("Blog not found with ID: {}", blogDto.getId());
+            return new ResponseDTO(false, "Blog cannot be found");
         }
 
-        if (blogDto.getTitle().length() > 100) {
-            return new ResponseDTO(false, "Title must be 100 characters or less");
+        Blog blog = optionalBlog.get();
+
+        ResponseDTO validationError = helperMethods.validateBlogInput(blogDto, file, false);
+        if (validationError != null) {
+            return validationError;
         }
 
-        if (file == null || file.isEmpty()) {
-            return new ResponseDTO(false, "Cover image is required");
-        }
+        Path path = null;
+        String oldImageUrl = blog.getCoverImage();
 
-        if (file.getContentType() == null || !file.getContentType().startsWith("image/")) {
-            return new ResponseDTO(false, "Only image files are allowed");
-        }
-
-        if (file.getSize() > maxFileSize) {
-            return new ResponseDTO(false, "Image size must be less than 5MB");
-        }
-
-        String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
-        Path path = Paths.get(uploadDir, fileName);
-        String fileUrl = "/files/" + fileName;
-
-        try{
-
-            Optional<Blog> optionalBlog = blogRepo.findById(blogDto.getId());
-            if(optionalBlog.isEmpty()){
-                logger.info("Invalid Blog id or Deleted blog passed ID: {}" , blogDto.getId());
-                return new ResponseDTO(false , "Blog cannot be found");
-             }
-
-            Blog blog = optionalBlog.get();
-
+        try {
             if (file != null && !file.isEmpty()) {
+                String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();
+                path = Paths.get(uploadDir, fileName);
+                String fileUrl = "/files/" + fileName;
 
                 Files.createDirectories(path.getParent());
                 Files.copy(file.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+
                 blog.setCoverImage(fileUrl);
+
+                helperMethods.deleteOldImageFile(oldImageUrl);
             }
 
             blog.setTitle(blogDto.getTitle());
-            blog.setDescription(blog.getDescription());
-            blog.setCategory(blog.getCategory());
+            blog.setDescription(blogDto.getDescription());
+            blog.setCategory(blogDto.getCategory());
             blog.setApproval(false);
             blog.setUserid(blogDto.getUserid());
 
             blogRepo.save(blog);
-            return new ResponseDTO(true , "Updating Success");
 
+            logger.info("Blog updated successfully with ID: {}", blogDto.getId());
+            return new ResponseDTO(true, "Update Success");
 
         } catch (Exception e) {
-            logger.error("Error while updating blog Error: ",e);
+            logger.error("Error while updating blog with ID: {}", blogDto.getId(), e);
 
-            try{
-                Files.deleteIfExists(path);
-            }catch (IOException exception) {
-                logger.error("Failed to delete temporary file: {}", path, exception);
+            if (path != null) {
+                helperMethods.deleteFileIfExists(path);
             }
 
-            return new ResponseDTO(false , "Internal server error Occurred");
+            return new ResponseDTO(false, "Internal server error occurred");
         }
-
-
-
-
     }
 
+    public ResponseDTO approveBlog(String blogId) {
+        logger.info("Approving blog with ID: {}", blogId);
+
+        Blog blog = blogRepo.findById(blogId)
+                .orElseThrow(() -> new NoSuchElementException("Blog not found with id: " + blogId));
+
+        blog.setApproval(true);
+        blogRepo.save(blog);
+
+        logger.info("Blog approved successfully with ID: {}", blogId);
+        return new ResponseDTO(true, "Approval Success");
+    }
 
 }
