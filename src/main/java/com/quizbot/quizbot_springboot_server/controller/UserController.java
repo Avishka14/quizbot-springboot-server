@@ -4,6 +4,7 @@ import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.User;
+import com.quizbot.quizbot_springboot_server.service.CookieService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -11,8 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 @RestController
 @RequestMapping("api/v1/users")
@@ -22,20 +25,34 @@ public class UserController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private CookieService cookieService;
+
     @PostMapping("/createuser")
-    public User createUser(@RequestBody UserDTO userDTO  , HttpServletResponse response){
+    public ResponseEntity<?> createUser(
+            @Valid @RequestBody UserDTO userDTO,
+            HttpServletResponse response
+    ) {
+        try {
+            User createdUser = userService.createUser(userDTO);
 
-        String userId = String.valueOf(userDTO.getId());
+            String token = userService.generateToken(createdUser.getEmail());
 
-        Cookie cookie = new Cookie("userid" , userId);
-        cookie.setHttpOnly(false);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(24 * 60 * 60);
-        response.addCookie(cookie);
+            Cookie authCookie = cookieService.createAuthCookie(token);
+            response.addCookie(authCookie);
 
-        return userService.createUser(userDTO);
+            Map<String, Object> responseMap = new HashMap<>();
+            responseMap.put("user", createdUser);
+
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseMap);
+
+        } catch (Exception e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(e.getMessage());
+        }
     }
+
 
     @GetMapping("/getusers/{id}")
     public UserDTO getUserById(@PathVariable Long id) {
@@ -43,24 +60,29 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> logIn(@RequestBody LoginRequestDTO loginRequestDTO , HttpServletResponse response) {
+    public ResponseEntity<?> logIn(
+            @Valid @RequestBody LoginRequestDTO loginRequestDTO,
+            HttpServletResponse response
+    ) {
         UserResponseDTO userResponse = userService.logIn(loginRequestDTO);
+
         if (userResponse != null) {
 
-            String userId = String.valueOf(userResponse.getId());
+            String token = userService.generateToken(userResponse.getEmail());
 
-            Cookie cookie = new Cookie("userid" , userId);
-            cookie.setHttpOnly(false);
-            cookie.setSecure(false);
-            cookie.setPath("/");
-            cookie.setMaxAge(24 * 60 * 60);
-            response.addCookie(cookie);
+            Cookie authCookie = cookieService.createAuthCookie(token);
+            response.addCookie(authCookie);
 
             return ResponseEntity.ok(userResponse);
 
         } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid email or password");
+            return ResponseEntity
+                    .status(HttpStatus.UNAUTHORIZED)
+                    .body("Invalid email or password");
         }
     }
+
+
+
 
 }
