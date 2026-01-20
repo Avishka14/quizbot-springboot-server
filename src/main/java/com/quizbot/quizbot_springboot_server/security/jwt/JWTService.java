@@ -1,6 +1,7 @@
 package com.quizbot.quizbot_springboot_server.security.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
@@ -86,4 +87,15 @@ public class JWTService {
         final String tokenEmail = extractEmail(token);
         return (tokenEmail.equals(email) && !isTokenExpired(token));
     }
+
+    // validate token check if valid and not expired
+    public Boolean validateToken(String token) {
+        try {
+            extractAllClaims(token);
+            return !isTokenExpired(token);
+        } catch (ExpiredJwtException e) {
+            return false;
+        }
+    }
+
 }

@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 @Service
@@ -28,6 +29,7 @@ public class UserService {
 
     @Autowired
     private JWTService jwtService;
+
 
     public User createUser(UserDTO userDTO){
         if(userRepo.existsByEmail(userDTO.getEmail())){
@@ -73,6 +75,28 @@ public class UserService {
 
         return null;
     }
+
+    public UserResponseDTO getUserFromJWTToken(String token) {
+
+        if (!jwtService.validateToken(token)) {
+            throw new IllegalArgumentException("Token is invalid or expired");
+        }else{
+            String email = jwtService.extractEmail(token);
+
+            if (email == null || email.trim().isEmpty()) {
+                throw new IllegalArgumentException("Token does not contain valid email");
+            }
+            Optional<User> user = userRepo.findByEmail(email);
+
+            if (user.isPresent()) {
+                return modelMapper.map(user.get(), UserResponseDTO.class);
+            } else {
+                throw new NoSuchElementException("User not found with email: " + email);
+            }
+        }
+
+    }
+
 
 
 }

@@ -4,6 +4,7 @@ import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.User;
+import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.CookieService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
 import jakarta.servlet.http.Cookie;
@@ -27,6 +28,9 @@ public class UserController {
 
     @Autowired
     private CookieService cookieService;
+
+    @Autowired
+    private JWTService jwtService;
 
     @PostMapping("/createuser")
     public ResponseEntity<?> createUser(
@@ -54,11 +58,6 @@ public class UserController {
     }
 
 
-    @GetMapping("/getusers/{id}")
-    public UserDTO getUserById(@PathVariable Long id) {
-        return userService.getUserById(id);
-    }
-
     @PostMapping("/login")
     public ResponseEntity<?> logIn(
             @Valid @RequestBody LoginRequestDTO loginRequestDTO,
@@ -79,6 +78,34 @@ public class UserController {
             return ResponseEntity
                     .status(HttpStatus.UNAUTHORIZED)
                     .body("Invalid email or password");
+        }
+    }
+
+    @GetMapping("/getbytoken")
+    public ResponseEntity<?> getUserbyJWTToken(@RequestHeader("Authorization") String authHeader){
+
+        try{
+            if (!authHeader.startsWith("Bearer ")) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Invalid Authorization header format. Expected: Bearer <token>");
+            }
+
+            String token = authHeader.substring(7);
+
+            if (!jwtService.validateToken(token)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+
+            UserResponseDTO user = userService.getUserFromJWTToken(token);
+            return ResponseEntity.ok(user);
+
+        }catch (Exception e){
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred");
         }
     }
 
