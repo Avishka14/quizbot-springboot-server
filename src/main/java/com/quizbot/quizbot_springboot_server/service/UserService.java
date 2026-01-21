@@ -78,9 +78,6 @@ public class UserService {
 
     public UserResponseDTO getUserFromJWTToken(String token) {
 
-        if (!jwtService.validateToken(token)) {
-            throw new IllegalArgumentException("Token is invalid or expired");
-        }else{
             String email = jwtService.extractEmail(token);
 
             if (email == null || email.trim().isEmpty()) {
@@ -93,7 +90,6 @@ public class UserService {
             } else {
                 throw new NoSuchElementException("User not found with email: " + email);
             }
-        }
 
     }
 

@@ -3,7 +3,10 @@ package com.quizbot.quizbot_springboot_server.service;
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
 import com.quizbot.quizbot_springboot_server.model.Blog;
+import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
+import com.quizbot.quizbot_springboot_server.repository.UserRepo;
+import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.utility.HelperMethods;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
@@ -32,6 +35,12 @@ public class BlogServices {
 
     @Autowired
     private HelperMethods helperMethods;
+
+    @Autowired
+    private JWTService jwtService;
+
+    @Autowired
+    private UserRepo userRepo;
 
     private final String uploadDir = "uploads";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -72,13 +81,28 @@ public class BlogServices {
         }
     }
 
-    public List<BlogDto> getArticlesByUserId(String userId) {
-        logger.info("Fetching articles for user: {}", userId);
-        List<Blog> blogs = blogRepo.findByUserid(userId);
+    public List<BlogDto> getBlogsbyToken(String token) {
 
-        return blogs.stream()
-                .map(blog -> modelMapper.map(blog, BlogDto.class))
-                .collect(Collectors.toList());
+        String email = jwtService.extractEmail(token);
+
+        if(email == null || email.trim().isEmpty()){
+            throw new IllegalArgumentException("User does not exists or token does not contain valid email");
+        }
+
+        Optional<User> user = userRepo.findByEmail(email);
+
+        if(user.isPresent()){
+            User userZ = user.get();
+            List<Blog> blogs = blogRepo.findByUserid(userZ.getId().toString());
+
+            return blogs.stream()
+                    .map(blog -> modelMapper.map(blog, BlogDto.class))
+                    .collect(Collectors.toList());
+        }else{
+            throw new IllegalArgumentException("User does not exists");
+        }
+
+
     }
 
     public List<BlogDto> getAllBlogs() {
