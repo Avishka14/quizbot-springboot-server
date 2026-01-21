@@ -70,9 +70,7 @@ public class UserController {
             String token = userService.generateToken(userResponse.getEmail());
 
             Cookie authCookie = cookieService.createAuthCookie(token);
-            Cookie userCookie = cookieService.createUserIDCookie(userResponse.getId());
             response.addCookie(authCookie);
-            response.addCookie(userCookie);
 
             return ResponseEntity.ok(userResponse);
 
@@ -84,16 +82,9 @@ public class UserController {
     }
 
     @GetMapping("/getbytoken")
-    public ResponseEntity<?> getUserbyJWTToken(@RequestHeader("Authorization") String authHeader){
+    public ResponseEntity<?> getUserbyJWTToken( @CookieValue("auth_token") String token){
 
         try{
-            if (!authHeader.startsWith("Bearer ")) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Invalid Authorization header format.");
-            }
-
-            String token = authHeader.substring(7);
 
             if (!jwtService.validateToken(token)) {
                 return ResponseEntity

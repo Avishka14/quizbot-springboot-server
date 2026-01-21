@@ -9,19 +9,13 @@ public class CookieService {
     public Cookie createAuthCookie(String token) {
         Cookie cookie = new Cookie("auth_token", token);
         cookie.setHttpOnly(true);
-        cookie.setSecure(true);
+        cookie.setSecure(false);
         cookie.setPath("/");
         cookie.setMaxAge(24 * 60 * 60);
+        cookie.setAttribute("SameSite", "None");
         return cookie;
+
     }
 
-    public Cookie createUserIDCookie(Long id){
-        Cookie cookie = new Cookie("user", id.toString());
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setPath("/");
-        cookie.setMaxAge(24 * 60 * 60);
-        return cookie;
-    }
 
 }
