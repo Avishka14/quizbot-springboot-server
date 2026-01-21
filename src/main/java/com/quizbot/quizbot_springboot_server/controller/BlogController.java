@@ -2,6 +2,7 @@ package com.quizbot.quizbot_springboot_server.controller;
 
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
+import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,9 @@ public class BlogController {
 
     @Autowired
     private BlogServices blogServices;
+
+    @Autowired
+    private JWTService jwtService;
 
     private static final Logger logger = LoggerFactory.getLogger(BlogController.class);
 
@@ -54,22 +58,33 @@ public class BlogController {
         }
     }
 
-    @GetMapping("/getblog/{userid}")
-    public ResponseEntity<?> getBlogsByUser(@PathVariable String userid) {
-        try {
+    @GetMapping("/getuserblogs")
+    public ResponseEntity<?> getBlogsByUserToken(@RequestHeader("Authorization") String authHeader){
 
-            List<BlogDto> blogs = blogServices.getArticlesByUserId(userid);
+        try{
+            if(!authHeader.startsWith("Bearer ")) {
+                return ResponseEntity
+                        .status(HttpStatus.BAD_REQUEST)
+                        .body("Invalid Authorization header format.");
+            }
+
+            String token = authHeader.substring(7);
+
+            if(!jwtService.validateToken(token)){
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or Expired token");
+            }
+
+            List<BlogDto> blogs = blogServices.getBlogsbyToken(token);
             return ResponseEntity.ok(blogs);
 
-        } catch (NoSuchElementException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("error", "User not found"));
-
         } catch (Exception e) {
-            logger.error("Error fetching blogs for userid: {}", userid, e);
+            logger.error("Error fetching blogs for authHeader: {}", authHeader, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to fetch blogs"));
         }
+
     }
 
     @PutMapping("/updateblog/{id}")
