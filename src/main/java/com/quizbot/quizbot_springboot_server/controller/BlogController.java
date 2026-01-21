@@ -59,16 +59,11 @@ public class BlogController {
     }
 
     @GetMapping("/getuserblogs")
-    public ResponseEntity<?> getBlogsByUserToken(@RequestHeader("Authorization") String authHeader){
+    public ResponseEntity<?> getBlogsByUserToken(
+            @CookieValue("auth_token") String token
+    ){
 
         try{
-            if(!authHeader.startsWith("Bearer ")) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("Invalid Authorization header format.");
-            }
-
-            String token = authHeader.substring(7);
 
             if(!jwtService.validateToken(token)){
                 return ResponseEntity
@@ -80,7 +75,7 @@ public class BlogController {
             return ResponseEntity.ok(blogs);
 
         } catch (Exception e) {
-            logger.error("Error fetching blogs for authHeader: {}", authHeader, e);
+            logger.error("Error fetching blogs for authHeader: {}", token, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to fetch blogs"));
         }
