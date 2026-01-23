@@ -40,10 +40,10 @@ public class UserController {
         try {
             User createdUser = userService.createUser(userDTO);
 
-            String token = userService.generateToken(createdUser.getEmail());
+            String token = userService.generateToken(createdUser.getEmail() , createdUser.getId());
 
-            Cookie authCookie = cookieService.createAuthCookie(token);
-            response.addCookie(authCookie);
+            String authCookie = cookieService.buildAuthCookie(token);
+            response.addHeader("Set-Cookie" , authCookie);
 
             Map<String, Object> responseMap = new HashMap<>();
             responseMap.put("user", createdUser);
@@ -67,10 +67,10 @@ public class UserController {
 
         if (userResponse != null) {
 
-            String token = userService.generateToken(userResponse.getEmail());
+            String token = userService.generateToken(userResponse.getEmail() , userResponse.getId());
 
-            Cookie authCookie = cookieService.createAuthCookie(token);
-            response.addCookie(authCookie);
+            String authCookie = cookieService.buildAuthCookie(token);
+            response.addHeader("Set-Cookie" , authCookie);
 
             return ResponseEntity.ok(userResponse);
 

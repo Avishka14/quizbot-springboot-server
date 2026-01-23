@@ -24,9 +24,10 @@ public class JWTService {
     @Value("${jwt.expiration}")
     private long jwtExpiration;
 
-    // this method will generate token with user email
-    public String generateToken(String email) {
+    // this method will generate token with user email and id
+    public String generateToken(String email , Long userId) {
         Map<String, Object> claims = new HashMap<>();
+        claims.put("userId" , userId);
         return createToken(claims, email);
     }
 
@@ -57,6 +58,12 @@ public class JWTService {
         return extractClaim(token, Claims::getSubject);
     }
 
+    //extract userId from token
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("userId", Long.class));
+    }
+
+
     // extract expiration date
     public Date extractExpiration(String token) {
         return extractClaim(token, Claims::getExpiration);
@@ -82,11 +89,6 @@ public class JWTService {
         return extractExpiration(token).before(new Date());
     }
 
-    // validate token
-    public Boolean validateToken(String token, String email) {
-        final String tokenEmail = extractEmail(token);
-        return (tokenEmail.equals(email) && !isTokenExpired(token));
-    }
 
     // validate token check if valid and not expired
     public Boolean validateToken(String token) {

@@ -6,16 +6,13 @@ import org.springframework.stereotype.Service;
 @Service
 public class CookieService {
 
-    public Cookie createAuthCookie(String token) {
-        Cookie cookie = new Cookie("auth_token", token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);
-        cookie.setPath("/");
-        cookie.setMaxAge(24 * 60 * 60);
-        cookie.setAttribute("SameSite", "None");
-        return cookie;
-
+    public String buildAuthCookie(String token) {
+        return "auth_token=" + token +
+                "; Path=/" +
+                "; Max-Age=86400" +
+                "; HttpOnly" +
+                "; SameSite=None" +
+                "; Secure";
     }
-
-
 }
+
