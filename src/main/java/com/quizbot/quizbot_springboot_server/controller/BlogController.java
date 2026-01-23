@@ -88,8 +88,7 @@ public class BlogController {
             @RequestParam(value = "coverImage", required = false) MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("category") String category,
-            @RequestParam("description") String content,
-            @RequestParam("userid") String userId
+            @RequestParam("description") String content
     ) {
         try {
 
@@ -98,7 +97,6 @@ public class BlogController {
             blogDto.setTitle(title);
             blogDto.setCategory(category);
             blogDto.setDescription(content);
-            blogDto.setUserid(userId);
 
             ResponseDTO response = blogServices.updateExistingBlog(blogDto, file);
 

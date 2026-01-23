@@ -42,8 +42,8 @@ public class UserService {
 
     }
 
-    public String generateToken(String email) {
-        return jwtService.generateToken(email);
+    public String generateToken(String email , Long userId) {
+        return jwtService.generateToken(email , userId);
     }
 
     public List<UserDTO> getAllUsers(){
