@@ -2,8 +2,10 @@ package com.quizbot.quizbot_springboot_server.controller;
 
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
+import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
+import com.quizbot.quizbot_springboot_server.service.UserService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +27,9 @@ public class BlogController {
     @Autowired
     private JWTService jwtService;
 
+    @Autowired
+    private UserService userService;
+
     private static final Logger logger = LoggerFactory.getLogger(BlogController.class);
 
     @PostMapping("/upload")
@@ -33,26 +38,36 @@ public class BlogController {
             @RequestParam("title") String title,
             @RequestParam("category") String category,
             @RequestParam("content") String content,
-            @RequestParam("userId") String userId
+            @CookieValue("auth_token") String token
     ) {
         try {
+
+            if (!jwtService.validateToken(token)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+
+            UserResponseDTO user = userService.getUserFromJWTToken(token);
+
             BlogDto blogDto = new BlogDto();
             blogDto.setTitle(title);
             blogDto.setCategory(category);
             blogDto.setDescription(content);
-            blogDto.setUserid(userId);
+            blogDto.setUserid(user.getId().toString());
+
 
             ResponseDTO response = blogServices.createNewBlog(blogDto, file);
 
             if (response.isStatus()) {
                 return ResponseEntity.ok(response);
             } else {
-                logger.warn("Failed to create blog for user: {}", userId);
+                logger.warn("Failed to create blog for user: {}", user.getId());
                 return ResponseEntity.badRequest().body(response);
             }
 
         } catch (Exception e) {
-            logger.error("Error while creating blog for user: {}", userId, e);
+            logger.error("Error while creating blog for user:", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "Failed to upload file"));
         }
@@ -88,15 +103,25 @@ public class BlogController {
             @RequestParam(value = "coverImage", required = false) MultipartFile file,
             @RequestParam("title") String title,
             @RequestParam("category") String category,
-            @RequestParam("description") String content
+            @RequestParam("description") String content,
+            @CookieValue("auth_token") String token
     ) {
         try {
+
+            if (!jwtService.validateToken(token)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+
+            UserResponseDTO user = userService.getUserFromJWTToken(token);
 
             BlogDto blogDto = new BlogDto();
             blogDto.setId(id);
             blogDto.setTitle(title);
             blogDto.setCategory(category);
             blogDto.setDescription(content);
+            blogDto.setUserid(user.getId().toString());
 
             ResponseDTO response = blogServices.updateExistingBlog(blogDto, file);
 
