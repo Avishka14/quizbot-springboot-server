@@ -173,4 +173,20 @@ public class BlogController {
                     .body(Map.of("error", "An unexpected error occurred"));
         }
     }
+
+
+    @GetMapping("/getnotapproved")
+    public ResponseEntity<?> getNotApprovedBlogs(){
+
+        try{
+            List<BlogDto> blogs = blogServices.getNotApprovedBlogs();
+            return ResponseEntity.ok(blogs);
+        }catch (RuntimeException e){
+            logger.error("Error fetching not approved blogs :", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred"));
+        }
+
+    }
+
 }

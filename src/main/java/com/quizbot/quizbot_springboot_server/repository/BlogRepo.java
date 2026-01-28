@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface BlogRepo extends JpaRepository <Blog, String> {
      List<Blog> findByUserid (String userid);
+     List<Blog> findByApprovalFalse();
 }
