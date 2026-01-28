@@ -106,9 +106,7 @@ public class BlogServices {
     }
 
     public List<BlogDto> getAllBlogs() {
-        logger.info("Fetching all blogs");
         List<Blog> blogs = blogRepo.findAll();
-
         return blogs.stream()
                 .map(blog -> modelMapper.map(blog, BlogDto.class))
                 .collect(Collectors.toList());
@@ -171,6 +169,21 @@ public class BlogServices {
 
             return new ResponseDTO(false, "Internal server error occurred");
         }
+    }
+
+    public List<BlogDto> getNotApprovedBlogs(){
+
+        try {
+            List<Blog> blogs = blogRepo.findByApprovalFalse();
+            return blogs.stream()
+                    .map(blog -> modelMapper.map(blog, BlogDto.class))
+                    .collect(Collectors.toList());
+
+        }catch (Exception e){
+            logger.error("Error while fetching not approved blogs :", e);
+            throw new RuntimeException("Error while fetching not approved blogs");
+        }
+
     }
 
     public ResponseDTO approveBlog(String blogId) {
