@@ -27,6 +27,8 @@ public class Blog {
 
     private String userid;
 
-    private boolean approval;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "approval_status", nullable = false)
+    private ApprovalStatus approvalStatus = ApprovalStatus.PENDING;
 
 }
