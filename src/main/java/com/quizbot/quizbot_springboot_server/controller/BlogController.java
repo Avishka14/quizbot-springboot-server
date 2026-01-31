@@ -56,8 +56,7 @@ public class BlogController {
             blogDto.setDescription(content);
             blogDto.setUserid(user.getId().toString());
 
-
-            ResponseDTO response = blogServices.createNewBlog(blogDto, file);
+            ResponseDTO response = blogServices.createNewBlog(blogDto, file );
 
             if (response.isStatus()) {
                 return ResponseEntity.ok(response);
@@ -157,7 +156,21 @@ public class BlogController {
         }
     }
 
-    @PutMapping("/approve/{id}")
+    @GetMapping("/getnotapproved")
+    public ResponseEntity<?> getNotApprovedBlogs(){
+
+        try{
+            List<BlogDto> blogs = blogServices.getNotApprovedBlogs();
+            return ResponseEntity.ok(blogs);
+        }catch (RuntimeException e){
+            logger.error("Error fetching not approved blogs :", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An error occurred"));
+        }
+
+    }
+
+    @PutMapping("/approveblog/{id}")
     public ResponseEntity<?> approveBlog(@PathVariable String id) {
         try {
             ResponseDTO responseDTO = blogServices.approveBlog(id);
@@ -175,18 +188,8 @@ public class BlogController {
     }
 
 
-    @GetMapping("/getnotapproved")
-    public ResponseEntity<?> getNotApprovedBlogs(){
 
-        try{
-            List<BlogDto> blogs = blogServices.getNotApprovedBlogs();
-            return ResponseEntity.ok(blogs);
-        }catch (RuntimeException e){
-            logger.error("Error fetching not approved blogs :", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "An error occurred"));
-        }
 
-    }
+
 
 }

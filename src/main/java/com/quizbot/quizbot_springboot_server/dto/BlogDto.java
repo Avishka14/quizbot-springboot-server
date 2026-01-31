@@ -1,5 +1,6 @@
 package com.quizbot.quizbot_springboot_server.dto;
 
+import com.quizbot.quizbot_springboot_server.model.ApprovalStatus;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import lombok.AllArgsConstructor;
@@ -26,6 +27,6 @@ public class BlogDto {
 
     private String userid;
 
-    private boolean approval;
+    private ApprovalStatus approvalStatus;
 
 }

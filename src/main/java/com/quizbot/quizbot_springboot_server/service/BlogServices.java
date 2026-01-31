@@ -2,6 +2,7 @@ package com.quizbot.quizbot_springboot_server.service;
 
 import com.quizbot.quizbot_springboot_server.dto.BlogDto;
 import com.quizbot.quizbot_springboot_server.dto.ResponseDTO;
+import com.quizbot.quizbot_springboot_server.model.ApprovalStatus;
 import com.quizbot.quizbot_springboot_server.model.Blog;
 import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
@@ -46,7 +47,8 @@ public class BlogServices {
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
     private static final Logger logger = LoggerFactory.getLogger(BlogServices.class);
 
-    public ResponseDTO createNewBlog(BlogDto blogDto, MultipartFile file) {
+    public ResponseDTO createNewBlog(BlogDto blogDto, MultipartFile file
+                                      ) {
 
         ResponseDTO validationError = helperMethods.validateBlogInput(blogDto, file, true);
         if (validationError != null) {
@@ -67,7 +69,7 @@ public class BlogServices {
             blog.setDescription(blogDto.getDescription());
             blog.setCoverImage(fileUrl);
             blog.setUserid(blogDto.getUserid());
-            blog.setApproval(false);
+            blog.setApprovalStatus(ApprovalStatus.PENDING);
 
             blogRepo.save(blog);
 
@@ -152,7 +154,7 @@ public class BlogServices {
             blog.setTitle(blogDto.getTitle());
             blog.setDescription(blogDto.getDescription());
             blog.setCategory(blogDto.getCategory());
-            blog.setApproval(false);
+            blog.setApprovalStatus(ApprovalStatus.PENDING);
             blog.setUserid(blogDto.getUserid());
 
             blogRepo.save(blog);
@@ -174,7 +176,7 @@ public class BlogServices {
     public List<BlogDto> getNotApprovedBlogs(){
 
         try {
-            List<Blog> blogs = blogRepo.findByApprovalFalse();
+            List<Blog> blogs = blogRepo.findPendingBlogs();
             return blogs.stream()
                     .map(blog -> modelMapper.map(blog, BlogDto.class))
                     .collect(Collectors.toList());
@@ -192,11 +194,15 @@ public class BlogServices {
         Blog blog = blogRepo.findById(blogId)
                 .orElseThrow(() -> new NoSuchElementException("Blog not found with id: " + blogId));
 
-        blog.setApproval(true);
+        blog.setApprovalStatus(ApprovalStatus.APPROVED);
         blogRepo.save(blog);
 
         logger.info("Blog approved successfully with ID: {}", blogId);
         return new ResponseDTO(true, "Approval Success");
     }
+
+
+
+
 
 }
