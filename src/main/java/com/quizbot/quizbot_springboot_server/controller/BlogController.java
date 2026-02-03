@@ -170,7 +170,7 @@ public class BlogController {
 
     }
 
-    @PutMapping("/approveblog/{id}")
+    @PutMapping("/approve/{id}")
     public ResponseEntity<?> approveBlog(@PathVariable String id) {
         try {
             ResponseDTO responseDTO = blogServices.approveBlog(id);
@@ -182,6 +182,23 @@ public class BlogController {
 
         } catch (Exception e) {
             logger.error("Error approving blog with id: {}", id, e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "An unexpected error occurred"));
+        }
+    }
+
+    @PutMapping("/decline/{id}")
+    public ResponseEntity<?> delcineBlog(@PathVariable String id) {
+        try {
+            ResponseDTO responseDTO = blogServices.declineBlog(id);
+            return ResponseEntity.ok(responseDTO);
+
+        } catch (NoSuchElementException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("error", "Blog not found"));
+
+        } catch (Exception e) {
+            logger.error("Error decline blog with id: {}", id, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "An unexpected error occurred"));
         }
