@@ -189,7 +189,8 @@ public class BlogServices {
     }
 
     public ResponseDTO approveBlog(String blogId) {
-        logger.info("Approving blog with ID: {}", blogId);
+
+        try {
 
         Blog blog = blogRepo.findById(blogId)
                 .orElseThrow(() -> new NoSuchElementException("Blog not found with id: " + blogId));
@@ -197,8 +198,32 @@ public class BlogServices {
         blog.setApprovalStatus(ApprovalStatus.APPROVED);
         blogRepo.save(blog);
 
-        logger.info("Blog approved successfully with ID: {}", blogId);
         return new ResponseDTO(true, "Approval Success");
+
+          }catch (Exception e){
+             logger.error("Error while Approving blog :Blog ID :{}", blogId, e);
+              throw new RuntimeException("Error while Approving blog");
+          }
+    }
+
+    public ResponseDTO declineBlog(String blogId) {
+
+        try {
+
+        Blog blog = blogRepo.findById(blogId)
+                .orElseThrow(() -> new NoSuchElementException("Blog not found with id: " + blogId));
+
+        blog.setApprovalStatus(ApprovalStatus.DECLINED);
+        blogRepo.save(blog);
+
+        logger.info("Blog Declined successfully with ID: {}", blogId);
+        return new ResponseDTO(true, "Declined Success");
+        
+        }catch (Exception e){
+           logger.error("Error while Decline blog :Blog ID :{}", blogId, e);
+            throw new RuntimeException("Error while Decline blog");
+         }
+
     }
 
 
