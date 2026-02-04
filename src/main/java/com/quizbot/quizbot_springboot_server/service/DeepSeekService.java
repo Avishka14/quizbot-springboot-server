@@ -39,9 +39,9 @@ public class DeepSeekService {
         this.describeRepo = describeRepo;
     }
 
-    public List<QuizQuestionDTO> generateQuizAndSave(String topic, String userId) {
-        String prompt = "Generate 5 multiple-choice quiz questions on: " + topic +
-                ". Each question should have 'question', 'options' (array of 4), and 'answer' fields. Format your response as plain JSON array only. Do not include explanations or markdown.";
+    public List<QuizQuestionDTO> generateQuizAndSave(String topic , String difficulty , int count , String userId) {
+        String prompt = "Generate" +count+  "multiple-choice quiz questions on: " + topic +
+                ". in knowledge level" + difficulty + " Each question should have 'question', 'options' (array of 4), and 'answer' fields. Format your response as plain JSON array only. Do not include explanations or markdown.";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(apiKey);
