@@ -1,5 +1,6 @@
 package com.quizbot.quizbot_springboot_server.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quizbot.quizbot_springboot_server.dto.DescribeDto;
@@ -25,17 +26,15 @@ import java.util.Map;
 public class DeepSeekService {
 
     private final RestTemplate restTemplate;
-    private final ModelMapper modelMapper;
     private final QuizRepo quizRepo;
     private final DescribeRepo describeRepo;
 
     @Value("${deepseek.api.key}")
     private String apiKey;
 
-    public DeepSeekService(QuizRepo quizRepo, ModelMapper modelMapper , DescribeRepo describeRepo) {
+    public DeepSeekService(QuizRepo quizRepo, DescribeRepo describeRepo) {
         this.restTemplate = new RestTemplate();
         this.quizRepo = quizRepo;
-        this.modelMapper = modelMapper;
         this.describeRepo = describeRepo;
     }
 
@@ -58,20 +57,45 @@ public class DeepSeekService {
         ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
         List<QuizQuestionDTO> dtos = extractQuizListFromResponse(response.getBody());
+        ObjectMapper objectMapper = new ObjectMapper();
 
         List<Quiz> savedQuestions = dtos.stream()
                 .map(dto -> {
-                    Quiz q = modelMapper.map(dto, Quiz.class);
+                    try {
+                    Quiz q = new Quiz();
                     q.setUserId(userId);
                     q.setTopic(topic);
-                    return q;
+                    q.setQuestion(dto.getQuestion());
+                    q.setOptions(objectMapper.writeValueAsString(dto.getOptions()));
+                    q.setCorrectAnswer(dto.getCorrectAnswer());
+                    q.setUserAnswer(null);
+                    q.setCorrect(false);
+                    return quizRepo.save(q);
+                    } catch (JsonProcessingException e) {
+                        throw new RuntimeException(e);
+                    }
                 })
-                .map(quizRepo::save)
                 .toList();
 
         return savedQuestions.stream()
-                .map(q -> modelMapper.map(q, QuizQuestionDTO.class))
+                .map(q -> {
+                    try {
+                        List<String> options = objectMapper.readValue(q.getOptions(), List.class);
+
+                        QuizQuestionDTO dto = new QuizQuestionDTO();
+                        dto.setQuestion(q.getQuestion());
+                        dto.setOptions(options);
+                        dto.setCorrectAnswer(q.getCorrectAnswer());
+                        dto.setUserAnswer(q.getUserAnswer());
+                        dto.setCorrect(q.isCorrect());
+
+                        return dto;
+                    } catch (Exception e) {
+                        throw new RuntimeException(e);
+                    }
+                })
                 .toList();
+
     }
 
     private List<QuizQuestionDTO> extractQuizListFromResponse(String json) {
@@ -80,7 +104,6 @@ public class DeepSeekService {
             JsonNode root = mapper.readTree(json);
 
             String content = root.path("choices").get(0).path("message").path("content").asText();
-
 
             content = content.replaceAll("(?s)```json|```", "").trim();
 

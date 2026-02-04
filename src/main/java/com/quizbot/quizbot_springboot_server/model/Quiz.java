@@ -21,11 +21,15 @@ public class Quiz {
 
     private String topic;
 
+    @Column(columnDefinition = "TEXT")
     private String question;
 
-    @ElementCollection
-    private List<String> options;
+    @Column(columnDefinition = "JSON")
+    private String options;
 
-    private String answer;
+    private String correctAnswer;
+    private String userAnswer;
+
+    private boolean isCorrect;
 
 }
