@@ -12,5 +12,7 @@ import java.util.List;
 public class QuizQuestionDTO {
     private String question;
     private List<String> options;
-    private String answer;
+    private String correctAnswer;
+    private String userAnswer;
+    private boolean isCorrect;
 }
