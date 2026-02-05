@@ -9,8 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface QuizRepo extends JpaRepository<Quiz, String> {
+public interface QuizRepo extends JpaRepository<Quiz, Long> {
  List<Quiz> findByUserId(String userId);
-
 }
 

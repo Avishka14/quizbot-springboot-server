@@ -67,7 +67,7 @@ public class DeepSeekService {
                     q.setTopic(topic);
                     q.setQuestion(dto.getQuestion());
                     q.setOptions(objectMapper.writeValueAsString(dto.getOptions()));
-                    q.setCorrectAnswer(dto.getCorrectAnswer());
+                    q.setCorrectAnswer(dto.getAnswer());
                     q.setUserAnswer(null);
                     q.setCorrect(false);
                     return quizRepo.save(q);
@@ -83,9 +83,10 @@ public class DeepSeekService {
                         List<String> options = objectMapper.readValue(q.getOptions(), List.class);
 
                         QuizQuestionDTO dto = new QuizQuestionDTO();
+                        dto.setId(q.getId());
                         dto.setQuestion(q.getQuestion());
                         dto.setOptions(options);
-                        dto.setCorrectAnswer(q.getCorrectAnswer());
+                        dto.setAnswer(q.getCorrectAnswer());
                         dto.setUserAnswer(q.getUserAnswer());
                         dto.setCorrect(q.isCorrect());
 
@@ -98,6 +99,33 @@ public class DeepSeekService {
 
     }
 
+    public QuizQuestionDTO submitAnswer(Long quizId, String userAnswer) {
+        Quiz quiz = quizRepo.findById(quizId)
+                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+
+        quiz.setUserAnswer(userAnswer);
+        quiz.setCorrect(userAnswer.equals(quiz.getCorrectAnswer()));
+
+        Quiz saved = quizRepo.save(quiz);
+
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            List<String> options = mapper.readValue(saved.getOptions(), List.class);
+
+            QuizQuestionDTO dto = new QuizQuestionDTO();
+            dto.setId(saved.getId());
+            dto.setQuestion(saved.getQuestion());
+            dto.setOptions(options);
+            dto.setAnswer(saved.getCorrectAnswer());
+            dto.setUserAnswer(saved.getUserAnswer());
+            dto.setCorrect(saved.isCorrect());
+
+            return dto;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private List<QuizQuestionDTO> extractQuizListFromResponse(String json) {
         try {
             ObjectMapper mapper = new ObjectMapper();
@@ -107,12 +135,21 @@ public class DeepSeekService {
 
             content = content.replaceAll("(?s)```json|```", "").trim();
 
-            return Arrays.asList(mapper.readValue(content, QuizQuestionDTO[].class));
+            int start = content.indexOf('[');
+            int end = content.lastIndexOf(']');
+            if (start == -1 || end == -1 || end <= start) {
+                throw new RuntimeException("No JSON array found in the AI response");
+            }
+
+            String jsonArray = content.substring(start, end + 1);
+
+            return Arrays.asList(mapper.readValue(jsonArray, QuizQuestionDTO[].class));
         } catch (Exception e) {
             System.err.println("Raw DeepSeek response:\n" + json);
             throw new RuntimeException("Failed to parse DeepSeek response", e);
         }
     }
+
 
     public List<DescribeDto> generateDescribeAndSave(String topic , String userId){
 
