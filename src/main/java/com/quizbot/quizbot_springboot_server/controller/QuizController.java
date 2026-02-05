@@ -55,4 +55,14 @@ public class QuizController {
         }
     }
 
+    @PostMapping("/submit/{quizId}")
+    public ResponseEntity<QuizQuestionDTO> submitAnswer(
+            @PathVariable Long quizId,
+            @RequestBody Map<String, String> request) {
+
+        String userAnswer = request.get("userAnswer");
+        QuizQuestionDTO result = deepSeekService.submitAnswer(quizId, userAnswer);
+        return ResponseEntity.ok(result);
+    }
+
 }
