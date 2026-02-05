@@ -8,6 +8,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.time.LocalDate;
+import java.util.Date;
+
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -26,6 +29,10 @@ public class BlogDto {
     private String coverImage;
 
     private String userid;
+
+    private String userName;
+
+    private LocalDate createdDate;
 
     private ApprovalStatus approvalStatus;
 

@@ -55,6 +55,7 @@ public class BlogController {
             blogDto.setCategory(category);
             blogDto.setDescription(content);
             blogDto.setUserid(user.getId().toString());
+            blogDto.setUserName(user.getName());
 
             ResponseDTO response = blogServices.createNewBlog(blogDto, file );
 
