@@ -20,6 +20,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -69,6 +70,8 @@ public class BlogServices {
             blog.setDescription(blogDto.getDescription());
             blog.setCoverImage(fileUrl);
             blog.setUserid(blogDto.getUserid());
+            blog.setCreatedDate(LocalDate.now());
+            blog.setUserName(blogDto.getUserName());
             blog.setApprovalStatus(ApprovalStatus.PENDING);
 
             blogRepo.save(blog);
@@ -108,10 +111,16 @@ public class BlogServices {
     }
 
     public List<BlogDto> getAllBlogs() {
-        List<Blog> blogs = blogRepo.findAll();
-        return blogs.stream()
-                .map(blog -> modelMapper.map(blog, BlogDto.class))
-                .collect(Collectors.toList());
+        try {
+            List<Blog> blogs = blogRepo.findApprovedBlogs();
+            return blogs.stream()
+                    .map(blog -> modelMapper.map(blog, BlogDto.class))
+                    .collect(Collectors.toList());
+
+        }catch (Exception e){
+            logger.error("Error while fetching approved blogs :", e);
+            throw new RuntimeException("Error while fetching  approved blogs");
+        }
     }
 
     public ResponseDTO updateExistingBlog(BlogDto blogDto, MultipartFile file) {

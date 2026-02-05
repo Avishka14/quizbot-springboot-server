@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.time.LocalDate;
+import java.util.Date;
+
 @Entity
 @Data
 @NoArgsConstructor
@@ -26,6 +29,10 @@ public class Blog {
     private String coverImage;
 
     private String userid;
+
+    private String userName;
+
+    private LocalDate createdDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "approval_status", nullable = false)
