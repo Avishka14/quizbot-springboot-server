@@ -1,5 +1,6 @@
 package com.quizbot.quizbot_springboot_server.security.jwt;
 
+import com.quizbot.quizbot_springboot_server.model.User;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -25,9 +26,13 @@ public class JWTService {
     private long jwtExpiration;
 
     // this method will generate token with user email and id
-    public String generateToken(String email , Long userId) {
+    public String generateToken(String email , Long userId , User user) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId" , userId);
+        claims.put("roles", user.getRoles()
+                .stream()
+                .map(r -> r.getName().name())
+                .toList());
         return createToken(claims, email);
     }
 

@@ -74,6 +74,7 @@ public class JWTFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UserDetails userDetails;
+
             try {
                 userDetails = userDetailsService.loadUserByUsername(userEmail);
             } catch (Exception e) {
@@ -95,6 +96,8 @@ public class JWTFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
+
+
         }
 
         filterChain.doFilter(request, response);
