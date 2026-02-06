@@ -3,7 +3,10 @@ package com.quizbot.quizbot_springboot_server.service;
 import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
+import com.quizbot.quizbot_springboot_server.model.Role;
+import com.quizbot.quizbot_springboot_server.model.RoleType;
 import com.quizbot.quizbot_springboot_server.model.User;
+import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import org.modelmapper.TypeToken;
@@ -12,9 +15,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
-import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.time.LocalDate;
+import java.util.*;
 
 @Service
 public class UserService {
@@ -30,46 +32,39 @@ public class UserService {
     @Autowired
     private JWTService jwtService;
 
+    @Autowired
+    private RoleRepo roleRepo;
 
-    public User createUser(UserDTO userDTO){
-        if(userRepo.existsByEmail(userDTO.getEmail())){
+
+    public User createUser(User user){
+        if(userRepo.existsByEmail(user.getEmail())){
             throw new RuntimeException("Email is Already Used");
         }
 
-        User user = modelMapper.map(userDTO , User.class);
-        user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+        user.setJoined_date(LocalDate.now());
+
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+        Role userRole = roleRepo.findByName(RoleType.ROLE_USER)
+                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
+        user.setRoles(Set.of(userRole));
+
         return userRepo.save(user);
 
     }
 
-    public String generateToken(String email , Long userId) {
-        return jwtService.generateToken(email , userId);
+    public String generateToken(String email , Long userId , User user ) {
+        return jwtService.generateToken(email , userId , user);
     }
 
-    public List<UserDTO> getAllUsers(){
-        List<User> userList = userRepo.findAll();
-        return modelMapper.map(userList , new TypeToken<List <UserDTO>>() {} .getType());
-    }
 
-    public UserDTO getUserById(Long userId){
-        Optional<User> userOptional = userRepo.findById(userId);
-
-        if(userOptional.isEmpty()){
-            return null;
-        }
-
-        User user  = userOptional.get();
-        return modelMapper.map(user , UserDTO.class);
-
-    }
-
-    public UserResponseDTO logIn(LoginRequestDTO loginRequestDTO) {
+    public User logIn(LoginRequestDTO loginRequestDTO) {
         Optional<User> optionalUser = userRepo.findByEmail(loginRequestDTO.getEmail());
 
         if (optionalUser.isPresent()) {
             User user = optionalUser.get();
             if (passwordEncoder.matches(loginRequestDTO.getPassword(), user.getPassword())) {
-                return modelMapper.map(user, UserResponseDTO.class);
+                return user;
             }
         }
 

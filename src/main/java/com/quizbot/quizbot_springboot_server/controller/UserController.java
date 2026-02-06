@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -34,13 +35,13 @@ public class UserController {
 
     @PostMapping("/createuser")
     public ResponseEntity<?> createUser(
-            @Valid @RequestBody UserDTO userDTO,
+            @Valid @RequestBody User user,
             HttpServletResponse response
     ) {
         try {
-            User createdUser = userService.createUser(userDTO);
 
-            String token = userService.generateToken(createdUser.getEmail() , createdUser.getId());
+            User createdUser = userService.createUser(user);
+            String token = userService.generateToken(createdUser.getEmail() , createdUser.getId() , user );
 
             String authCookie = cookieService.buildAuthCookie(token);
             response.addHeader("Set-Cookie" , authCookie);
@@ -63,11 +64,11 @@ public class UserController {
             @Valid @RequestBody LoginRequestDTO loginRequestDTO,
             HttpServletResponse response
     ) {
-        UserResponseDTO userResponse = userService.logIn(loginRequestDTO);
+        User userResponse = userService.logIn(loginRequestDTO);
 
         if (userResponse != null) {
 
-            String token = userService.generateToken(userResponse.getEmail() , userResponse.getId());
+            String token = userService.generateToken(userResponse.getEmail() , userResponse.getId() , userResponse);
 
             String authCookie = cookieService.buildAuthCookie(token);
             response.addHeader("Set-Cookie" , authCookie);
