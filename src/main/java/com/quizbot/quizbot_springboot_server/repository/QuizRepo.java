@@ -10,6 +10,7 @@ import java.util.List;
 
 @Repository
 public interface QuizRepo extends JpaRepository<Quiz, Long> {
- List<Quiz> findByUserId(String userId);
+ List<Quiz> findByUserId(Long userId);
+ long countByUserId(Long userId);
 }
 

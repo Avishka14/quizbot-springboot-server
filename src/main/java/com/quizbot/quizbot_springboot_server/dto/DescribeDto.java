@@ -13,6 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class DescribeDto {
     private String topic;
-    private String userid;
+    private Long userid;
     private String description;
 }

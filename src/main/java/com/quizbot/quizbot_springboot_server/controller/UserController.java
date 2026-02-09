@@ -3,6 +3,8 @@ package com.quizbot.quizbot_springboot_server.controller;
 import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
+import com.quizbot.quizbot_springboot_server.dto.UserStatsDTO;
+import com.quizbot.quizbot_springboot_server.model.Quiz;
 import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.CookieService;
@@ -17,6 +19,7 @@ import jakarta.validation.Valid;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -101,6 +104,51 @@ public class UserController {
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred");
         }
+    }
+
+
+    @GetMapping("/getquestions")
+    public ResponseEntity<?> getPreviousQuestions(@CookieValue("auth_token") String token){
+
+        try{
+
+            if (!jwtService.validateToken(token)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+            UserResponseDTO user = userService.getUserFromJWTToken(token);
+            List<Quiz> quizez = userService.getUserPreviousQuestions(user.getEmail());
+            return ResponseEntity.ok(quizez);
+
+        }catch (Exception e){
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred");
+        }
+
+    }
+
+    @GetMapping("/getstats")
+    public ResponseEntity<?> getUserStats(@CookieValue("auth_token") String token){
+
+        try{
+            if (!jwtService.validateToken(token)) {
+                return ResponseEntity
+                        .status(HttpStatus.UNAUTHORIZED)
+                        .body("Invalid or expired token");
+            }
+            UserResponseDTO user = userService.getUserFromJWTToken(token);
+
+            UserStatsDTO stats = userService.getUserStats(user.getEmail());
+            return ResponseEntity.ok(stats);
+
+        }catch (Exception e){
+            return ResponseEntity
+                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("An error occurred");
+        }
+
     }
 
 
