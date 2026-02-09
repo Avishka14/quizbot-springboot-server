@@ -38,7 +38,7 @@ public class DeepSeekService {
         this.describeRepo = describeRepo;
     }
 
-    public List<QuizQuestionDTO> generateQuizAndSave(String topic , String difficulty , int count , String userId) {
+    public List<QuizQuestionDTO> generateQuizAndSave(String topic , String difficulty , int count , Long userId) {
         String prompt = "Generate" +count+  "multiple-choice quiz questions on: " + topic +
                 ". in knowledge level" + difficulty + " Each question should have 'question', 'options' (array of 4), and 'answer' fields. Format your response as plain JSON array only. Do not include explanations or markdown.";
 
@@ -151,7 +151,7 @@ public class DeepSeekService {
     }
 
 
-    public List<DescribeDto> generateDescribeAndSave(String topic , String userId){
+    public List<DescribeDto> generateDescribeAndSave(String topic , Long userId){
 
         String prompt = "Generate a short description about " + topic +
                 ". Use around 150 to 200 words. Format your response as a plain JSON array" +
@@ -175,7 +175,7 @@ public class DeepSeekService {
 
         Describe d = new Describe();
         d.setTopic(topic);
-        d.setUserid(userId);
+        d.setUserId(userId);
         describeRepo.save(d);
 
         return dtos.stream().peek(dto -> {

@@ -18,5 +18,5 @@ public class Describe {
 
     @Column(columnDefinition = "TEXT")
     private String topic;
-    private String userid;
+    private Long userId;
 }

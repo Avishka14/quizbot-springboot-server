@@ -1,11 +1,12 @@
 package com.quizbot.quizbot_springboot_server.service;
 
-import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
-import com.quizbot.quizbot_springboot_server.dto.UserDTO;
-import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
+import com.quizbot.quizbot_springboot_server.dto.*;
+import com.quizbot.quizbot_springboot_server.model.Quiz;
 import com.quizbot.quizbot_springboot_server.model.Role;
 import com.quizbot.quizbot_springboot_server.model.RoleType;
 import com.quizbot.quizbot_springboot_server.model.User;
+import com.quizbot.quizbot_springboot_server.repository.DescribeRepo;
+import com.quizbot.quizbot_springboot_server.repository.QuizRepo;
 import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
@@ -34,6 +36,12 @@ public class UserService {
 
     @Autowired
     private RoleRepo roleRepo;
+
+    @Autowired
+    private QuizRepo quizRepo;
+
+    @Autowired
+    private DescribeRepo describeRepo;
 
 
     public User createUser(User user){
@@ -85,6 +93,39 @@ public class UserService {
             } else {
                 throw new NoSuchElementException("User not found with email: " + email);
             }
+
+    }
+
+    public List<Quiz> getUserPreviousQuestions(String email) {
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("User not found for :" +email));
+
+        List<Quiz> quizzes = quizRepo.findByUserId(user.getId());
+
+        return quizzes != null ? quizzes : Collections.emptyList();
+
+    }
+
+    public UserStatsDTO getUserStats(String email){
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("User not found for :" +email));
+
+        LocalDate joinedDate = user.getJoined_date();
+        LocalDate today = LocalDate.now();
+
+        long daysSinceLogged = ChronoUnit.DAYS.between(joinedDate , today);
+        long totalQuizzes = quizRepo.countByUserId(user.getId());
+        long totalDescribes = describeRepo.countByUserId(user.getId());
+
+        UserStatsDTO userStatsDTO = new UserStatsDTO();
+        userStatsDTO.setUserId(user.getId());
+        userStatsDTO.setDaysLogged(daysSinceLogged);
+        userStatsDTO.setQuestionsCovered(totalQuizzes);
+        userStatsDTO.setTopicsCovered(totalDescribes);
+        userStatsDTO.setName(user.getName());
+        return userStatsDTO;
 
     }
 

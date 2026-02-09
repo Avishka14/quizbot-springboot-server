@@ -23,10 +23,10 @@ public class DescribeController {
     public ResponseEntity<?> generateDescribe(@RequestBody Map<String , String> request){
         String topic = request.get("topic");
         String userId = request.get("userId");
-
+        long userIdLong = Long.parseLong(userId);
         try {
 
-          List<DescribeDto> describe = deepSeekService.generateDescribeAndSave(topic , userId);
+          List<DescribeDto> describe = deepSeekService.generateDescribeAndSave(topic , userIdLong);
           return ResponseEntity.ok(describe);
 
         }catch(Exception e){

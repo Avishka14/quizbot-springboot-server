@@ -45,7 +45,7 @@ public class QuizController {
 
             UserResponseDTO user = userService.getUserFromJWTToken(token);
 
-            List<QuizQuestionDTO> quiz = deepSeekService.generateQuizAndSave(topic, difficulty , questionCount,  user.getId().toString());
+            List<QuizQuestionDTO> quiz = deepSeekService.generateQuizAndSave(topic, difficulty , questionCount,  user.getId());
             return ResponseEntity.ok(quiz);
 
 
