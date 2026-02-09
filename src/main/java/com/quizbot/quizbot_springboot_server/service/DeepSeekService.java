@@ -10,6 +10,8 @@ import com.quizbot.quizbot_springboot_server.model.Quiz;
 import com.quizbot.quizbot_springboot_server.repository.DescribeRepo;
 import com.quizbot.quizbot_springboot_server.repository.QuizRepo;
 import org.modelmapper.ModelMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -31,6 +33,9 @@ public class DeepSeekService {
 
     @Value("${deepseek.api.key}")
     private String apiKey;
+
+    private static final Logger logger = LoggerFactory.getLogger(DeepSeekService.class);
+
 
     public DeepSeekService(QuizRepo quizRepo, DescribeRepo describeRepo) {
         this.restTemplate = new RestTemplate();
@@ -72,6 +77,7 @@ public class DeepSeekService {
                     q.setCorrect(false);
                     return quizRepo.save(q);
                     } catch (JsonProcessingException e) {
+                        logger.error("Failed to serialize options for quiz", e);
                         throw new RuntimeException(e);
                     }
                 })
@@ -92,6 +98,7 @@ public class DeepSeekService {
 
                         return dto;
                     } catch (Exception e) {
+                        logger.error("Failed to map Quiz entity to DTO", e);
                         throw new RuntimeException(e);
                     }
                 })
@@ -101,7 +108,10 @@ public class DeepSeekService {
 
     public QuizQuestionDTO submitAnswer(Long quizId, String userAnswer) {
         Quiz quiz = quizRepo.findById(quizId)
-                .orElseThrow(() -> new RuntimeException("Quiz not found"));
+                .orElseThrow(() -> {
+                    logger.warn("Quiz not found | quizId={}", quizId);
+                    return new RuntimeException("Quiz not found");
+                });
 
         quiz.setUserAnswer(userAnswer);
         quiz.setCorrect(userAnswer.equals(quiz.getCorrectAnswer()));
@@ -122,6 +132,7 @@ public class DeepSeekService {
 
             return dto;
         } catch (Exception e) {
+            logger.error("Failed to parse options JSON", e);
             throw new RuntimeException(e);
         }
     }
@@ -145,7 +156,6 @@ public class DeepSeekService {
 
             return Arrays.asList(mapper.readValue(jsonArray, QuizQuestionDTO[].class));
         } catch (Exception e) {
-            System.err.println("Raw DeepSeek response:\n" + json);
             throw new RuntimeException("Failed to parse DeepSeek response", e);
         }
     }
@@ -206,7 +216,8 @@ public class DeepSeekService {
             return List.of(dto);
 
         } catch (Exception e) {
-            System.err.println("Raw DeepSeek Describe response:\n" + json);
+            logger.error("Failed to parse DeepSeek description response: Raw DeepSeek response: {}", json);
+
             throw new RuntimeException("Failed to parse DeepSeek description response", e);
         }
     }
