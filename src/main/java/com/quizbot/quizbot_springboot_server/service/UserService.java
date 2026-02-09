@@ -11,6 +11,8 @@ import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import org.modelmapper.TypeToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -43,9 +45,13 @@ public class UserService {
     @Autowired
     private DescribeRepo describeRepo;
 
+    private static final Logger logger = LoggerFactory.getLogger(UserService.class);
+
 
     public User createUser(User user){
+
         if(userRepo.existsByEmail(user.getEmail())){
+            logger.warn("User creation failed - email already exists: {}", user.getEmail());
             throw new RuntimeException("Email is Already Used");
         }
 
@@ -54,9 +60,12 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
 
         Role userRole = roleRepo.findByName(RoleType.ROLE_USER)
-                .orElseThrow(() -> new RuntimeException("ROLE_USER not found"));
-        user.setRoles(Set.of(userRole));
+                .orElseThrow(() -> {
+                    logger.error("ROLE_USER not found in DB");
+                    return new RuntimeException("ROLE_USER not found");
+                });
 
+        user.setRoles(Set.of(userRole));
         return userRepo.save(user);
 
     }
@@ -75,24 +84,28 @@ public class UserService {
                 return user;
             }
         }
-
-        return null;
+        logger.warn("Login failed | email={}", loginRequestDTO.getEmail());
+        throw new RuntimeException("Invalid credentials");
     }
 
     public UserResponseDTO getUserFromJWTToken(String token) {
 
             String email = jwtService.extractEmail(token);
 
-            if (email == null || email.trim().isEmpty()) {
-                throw new IllegalArgumentException("Token does not contain valid email");
-            }
+        if (email == null || email.trim().isEmpty()) {
+            logger.error("JWT does not contain email");
+            throw new IllegalArgumentException("Token does not contain valid email");
+
+          }
             Optional<User> user = userRepo.findByEmail(email);
 
-            if (user.isPresent()) {
-                return modelMapper.map(user.get(), UserResponseDTO.class);
-            } else {
-                throw new NoSuchElementException("User not found with email: " + email);
-            }
+        if (user.isPresent()) {
+            logger.info("JWT validated | userId={}", user.get().getId());
+            return modelMapper.map(user.get(), UserResponseDTO.class);
+        } else {
+            logger.warn("JWT user not found | email={}", email);
+            throw new NoSuchElementException("User not found with email: " + email);
+        }
 
     }
 
@@ -110,7 +123,10 @@ public class UserService {
     public UserStatsDTO getUserStats(String email){
 
         User user = userRepo.findByEmail(email)
-                .orElseThrow(() -> new NoSuchElementException("User not found for :" +email));
+                .orElseThrow(() -> {
+                    logger.warn("User stats failed - user not found | email={}", email);
+                    return new NoSuchElementException("User not found for :" + email);
+                });
 
         LocalDate joinedDate = user.getJoined_date();
         LocalDate today = LocalDate.now();

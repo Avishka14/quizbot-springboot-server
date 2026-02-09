@@ -11,6 +11,8 @@ import com.quizbot.quizbot_springboot_server.service.CookieService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +38,8 @@ public class UserController {
     @Autowired
     private JWTService jwtService;
 
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
+
     @PostMapping("/createuser")
     public ResponseEntity<?> createUser(
             @Valid @RequestBody User user,
@@ -55,6 +59,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CREATED).body(responseMap);
 
         } catch (Exception e) {
+            logger.error("Exception in User Controller Exception: " + e);
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
                     .body(e.getMessage());
@@ -100,6 +105,7 @@ public class UserController {
             return ResponseEntity.ok(user);
 
         }catch (Exception e){
+            logger.error("Exception in User Controller Exception: " + e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred");
@@ -122,6 +128,7 @@ public class UserController {
             return ResponseEntity.ok(quizez);
 
         }catch (Exception e){
+            logger.error("Exception in User Controller Exception: " + e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred");
@@ -144,6 +151,7 @@ public class UserController {
             return ResponseEntity.ok(stats);
 
         }catch (Exception e){
+            logger.error("Exception in User Controller Exception: " + e);
             return ResponseEntity
                     .status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("An error occurred");
