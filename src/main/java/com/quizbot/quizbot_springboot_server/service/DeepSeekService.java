@@ -9,7 +9,6 @@ import com.quizbot.quizbot_springboot_server.model.Describe;
 import com.quizbot.quizbot_springboot_server.model.Quiz;
 import com.quizbot.quizbot_springboot_server.repository.DescribeRepo;
 import com.quizbot.quizbot_springboot_server.repository.QuizRepo;
-import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +17,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Arrays;
@@ -34,18 +34,22 @@ public class DeepSeekService {
     @Value("${deepseek.api.key}")
     private String apiKey;
 
+    @Value("${deepseek.model}")
+    private String model;
+
     private static final Logger logger = LoggerFactory.getLogger(DeepSeekService.class);
 
-
-    public DeepSeekService(QuizRepo quizRepo, DescribeRepo describeRepo) {
-        this.restTemplate = new RestTemplate();
+    public DeepSeekService(RestTemplate restTemplate,
+                           QuizRepo quizRepo,
+                           DescribeRepo describeRepo) {
+        this.restTemplate = restTemplate;
         this.quizRepo = quizRepo;
         this.describeRepo = describeRepo;
     }
 
-    public List<QuizQuestionDTO> generateQuizAndSave(String topic , String difficulty , int count , Long userId) {
-        String prompt = "Generate" +count+  "multiple-choice quiz questions on: " + topic +
-                ". in knowledge level" + difficulty + " Each question should have 'question', 'options' (array of 4), and 'answer' fields. Format your response as plain JSON array only. Do not include explanations or markdown.";
+    public List<QuizQuestionDTO> generateQuizAndSave(String topic, String difficulty, int count, Long userId) {
+        String prompt = "Generate " + count + " multiple-choice quiz questions on: " + topic +
+                ". in knowledge level " + difficulty + " Each question should have 'question', 'options' (array of 4), and 'answer' fields. Format your response as plain JSON array only. Do not include explanations or markdown.";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(apiKey);
@@ -54,56 +58,68 @@ public class DeepSeekService {
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
         Map<String, Object> body = Map.of(
-                "model", "tngtech/deepseek-r1t2-chimera:free",
+                "model", model,
                 "messages", List.of(Map.of("role", "user", "content", prompt))
         );
 
         HttpEntity<?> request = new HttpEntity<>(body, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        List<QuizQuestionDTO> dtos = extractQuizListFromResponse(response.getBody());
-        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        List<Quiz> savedQuestions = dtos.stream()
-                .map(dto -> {
-                    try {
-                    Quiz q = new Quiz();
-                    q.setUserId(userId);
-                    q.setTopic(topic);
-                    q.setQuestion(dto.getQuestion());
-                    q.setOptions(objectMapper.writeValueAsString(dto.getOptions()));
-                    q.setCorrectAnswer(dto.getAnswer());
-                    q.setUserAnswer(null);
-                    q.setCorrect(false);
-                    return quizRepo.save(q);
-                    } catch (JsonProcessingException e) {
-                        logger.error("Failed to serialize options for quiz", e);
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toList();
+            if (response.getBody() == null || response.getBody().isBlank()) {
+                throw new RuntimeException("DeepSeek API returned empty response");
+            }
 
-        return savedQuestions.stream()
-                .map(q -> {
-                    try {
-                        List<String> options = objectMapper.readValue(q.getOptions(), List.class);
+            List<QuizQuestionDTO> dtos = extractQuizListFromResponse(response.getBody());
+            ObjectMapper objectMapper = new ObjectMapper();
 
-                        QuizQuestionDTO dto = new QuizQuestionDTO();
-                        dto.setId(q.getId());
-                        dto.setQuestion(q.getQuestion());
-                        dto.setOptions(options);
-                        dto.setAnswer(q.getCorrectAnswer());
-                        dto.setUserAnswer(q.getUserAnswer());
-                        dto.setCorrect(q.isCorrect());
+            List<Quiz> savedQuestions = dtos.stream()
+                    .map(dto -> {
+                        try {
+                            Quiz q = new Quiz();
+                            q.setUserId(userId);
+                            q.setTopic(topic);
+                            q.setQuestion(dto.getQuestion());
+                            q.setOptions(objectMapper.writeValueAsString(dto.getOptions()));
+                            q.setCorrectAnswer(dto.getAnswer());
+                            q.setUserAnswer(null);
+                            q.setCorrect(false);
+                            return quizRepo.save(q);
+                        } catch (JsonProcessingException e) {
+                            logger.error("Failed to serialize options for quiz", e);
+                            throw new RuntimeException("Failed to serialize options", e);
+                        }
+                    })
+                    .toList();
 
-                        return dto;
-                    } catch (Exception e) {
-                        logger.error("Failed to map Quiz entity to DTO", e);
-                        throw new RuntimeException(e);
-                    }
-                })
-                .toList();
+            return savedQuestions.stream()
+                    .map(q -> {
+                        try {
+                            List<String> options = objectMapper.readValue(q.getOptions(), List.class);
 
+                            QuizQuestionDTO dto = new QuizQuestionDTO();
+                            dto.setId(q.getId());
+                            dto.setQuestion(q.getQuestion());
+                            dto.setOptions(options);
+                            dto.setAnswer(q.getCorrectAnswer());
+                            dto.setUserAnswer(q.getUserAnswer());
+                            dto.setCorrect(q.isCorrect());
+
+                            return dto;
+                        } catch (Exception e) {
+                            logger.error("Failed to map Quiz entity to DTO", e);
+                            throw new RuntimeException("Failed to map Quiz entity to DTO", e);
+                        }
+                    })
+                    .toList();
+
+        } catch (HttpClientErrorException e) {
+            logger.error("DeepSeek API error: {}", e.getResponseBodyAsString(), e);
+            throw new RuntimeException("Failed to call DeepSeek API", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate quiz", e);
+        }
     }
 
     public QuizQuestionDTO submitAnswer(Long quizId, String userAnswer) {
@@ -133,7 +149,7 @@ public class DeepSeekService {
             return dto;
         } catch (Exception e) {
             logger.error("Failed to parse options JSON", e);
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to parse options JSON", e);
         }
     }
 
@@ -142,7 +158,34 @@ public class DeepSeekService {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
 
-            String content = root.path("choices").get(0).path("message").path("content").asText();
+            if (root == null) {
+                throw new RuntimeException("DeepSeek response is null");
+            }
+
+            if (root.has("error")) {
+                String msg = root.path("error").path("message").asText("Unknown error");
+                throw new RuntimeException("DeepSeek API returned error: " + msg);
+            }
+
+            JsonNode choices = root.path("choices");
+            if (choices == null || !choices.isArray() || choices.size() == 0) {
+                throw new RuntimeException("DeepSeek API response missing 'choices'");
+            }
+
+            JsonNode firstChoice = choices.get(0);
+            if (firstChoice == null) {
+                throw new RuntimeException("DeepSeek API response 'choices[0]' is null");
+            }
+
+            JsonNode messageNode = firstChoice.path("message");
+            if (messageNode == null) {
+                throw new RuntimeException("DeepSeek API response 'message' node missing");
+            }
+
+            String content = messageNode.path("content").asText(null);
+            if (content == null) {
+                throw new RuntimeException("DeepSeek API response 'content' is null");
+            }
 
             content = content.replaceAll("(?s)```json|```", "").trim();
 
@@ -153,15 +196,14 @@ public class DeepSeekService {
             }
 
             String jsonArray = content.substring(start, end + 1);
-
             return Arrays.asList(mapper.readValue(jsonArray, QuizQuestionDTO[].class));
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse DeepSeek response", e);
         }
     }
 
-
-    public List<DescribeDto> generateDescribeAndSave(String topic , Long userId){
+    public List<DescribeDto> generateDescribeAndSave(String topic, Long userId) {
 
         String prompt = "Generate a short description about " + topic +
                 ". Use around 150 to 200 words. Format your response as a plain JSON array" +
@@ -174,40 +216,59 @@ public class DeepSeekService {
         String url = "https://openrouter.ai/api/v1/chat/completions";
 
         Map<String, Object> body = Map.of(
-                "model", "tngtech/deepseek-r1t2-chimera:free",
+                "model", model,
                 "messages", List.of(Map.of("role", "user", "content", prompt))
         );
 
         HttpEntity<?> request = new HttpEntity<>(body, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        List<DescribeDto> dtos = extractDescriptionListFromResponse(response.getBody());
+        try {
+            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
 
-        Describe d = new Describe();
-        d.setTopic(topic);
-        d.setUserId(userId);
-        describeRepo.save(d);
+            if (response.getBody() == null || response.getBody().isBlank()) {
+                throw new RuntimeException("DeepSeek API returned empty response");
+            }
 
-        return dtos.stream().peek(dto -> {
-            dto.setTopic(topic);
-            dto.setUserid(userId);
-        }).toList();
+            List<DescribeDto> dtos = extractDescriptionListFromResponse(response.getBody());
 
+            Describe d = new Describe();
+            d.setTopic(topic);
+            d.setUserId(userId);
+            describeRepo.save(d);
 
+            return dtos.stream().peek(dto -> {
+                dto.setTopic(topic);
+                dto.setUserid(userId);
+            }).toList();
+
+        } catch (HttpClientErrorException e) {
+            logger.error("DeepSeek API error: {}", e.getResponseBodyAsString(), e);
+            throw new RuntimeException("Failed to call DeepSeek API", e);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to generate description", e);
+        }
     }
 
     private List<DescribeDto> extractDescriptionListFromResponse(String json) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             JsonNode root = mapper.readTree(json);
-            String content = root.path("choices").get(0).path("message").path("content").asText();
 
+            if (root == null || !root.has("choices") || root.get("choices").size() == 0) {
+                throw new RuntimeException("DeepSeek API response missing 'choices'");
+            }
+
+            JsonNode contentNode = root.get("choices").get(0).path("message").path("content");
+            if (contentNode == null || contentNode.isNull()) {
+                throw new RuntimeException("DeepSeek API response 'content' is null");
+            }
+
+            String content = contentNode.asText().trim();
             if (content.startsWith("```")) {
                 content = content.replaceAll("(?s)^```(?:json)?\\s*|\\s*```$", "");
             }
 
             List<String> sentences = Arrays.asList(mapper.readValue(content, String[].class));
-
             String fullDescription = String.join(" ", sentences);
 
             DescribeDto dto = new DescribeDto();
@@ -216,13 +277,8 @@ public class DeepSeekService {
             return List.of(dto);
 
         } catch (Exception e) {
-            logger.error("Failed to parse DeepSeek description response: Raw DeepSeek response: {}", json);
-
+            logger.error("Failed to parse DeepSeek description response: Raw DeepSeek response: {}", json, e);
             throw new RuntimeException("Failed to parse DeepSeek description response", e);
         }
     }
-
-
-
-
 }
