@@ -1,4 +1,4 @@
-# QuizBot Spring Boot Server - Project Documentation
+# QuizBot (Beackemd) - Project Documentation
 
 
 ---
@@ -6,7 +6,10 @@
 ## Project Overview
 
 ### Description
-QuizBot is a comprehensive quiz generation and management system designed to facilitate the creation, distribution, and evaluation of quizzes. This repository contains the backend server built with Spring Boot, providing RESTful APIs for the React-based frontend application. quiz bot uses DeepSeek API for Quiz generation
+The purpose of the QuizBot project is to develop an interactive learning platform that enhances students’ knowledge through structured quizzes and concept-based learning. The system enables users to assess their understanding across various subjects by participating in quizzes designed to reinforce learning outcomes.
+
+Additionally, QuizBot provides clear and concise explanations of both technical and non-technical keywords to support conceptual clarity and deeper subject comprehension. The platform also includes a blogging feature that allows students to create, publish, and share articles within the QuizBot community, promoting collaborative learning and knowledge exchange.
+
 
 ### Purpose
 The system aims to:
@@ -26,36 +29,8 @@ The system aims to:
 
 ## System Architecture
 
+<img width="922" height="728" alt="Image" src="https://github.com/user-attachments/assets/ecd140b3-caaf-4622-93d2-d4c62fd70fa6" />
 
-```
-┌─────────────────┐
-│  React Frontend │
-│   (Separate)    │
-└────────┬────────┘
-         │ HTTP/REST
-         ▼
-┌─────────────────────────────────┐
-│   Spring Boot Application       │
-│  ┌──────────────────────────┐  │
-│  │   Controller Layer       │  │
-│  │  (REST Endpoints)        │  │
-│  └───────────┬──────────────┘  │
-│              ▼                  │
-│  ┌──────────────────────────┐  │
-│  │   Service Layer          │  │
-│  │  (Business Logic)        │  │
-│  └───────────┬──────────────┘  │
-│              ▼                  │
-│  ┌──────────────────────────┐  │
-│  │   Repository Layer       │  │
-│  │  (Data Access)           │  │
-│  └───────────┬──────────────┘  │
-└──────────────┼──────────────────┘
-               ▼
-      ┌────────────────┐
-      │  MySQL Database │
-      └────────────────┘
-```
 
 ### Design Patterns
 - **MVC (Model-View-Controller)**: Separation of concerns
@@ -91,7 +66,7 @@ The system aims to:
 - **Jackson**: JSON processing
 - **Hibernate**: ORM implementation
 - **JWT**: Token-based authentication
-- **Swagger/SpringDoc**: API documentation
+- **Mockito** : Unit Testing
 
 ### Development Tools
 - **Java** 11/17/21
@@ -108,17 +83,35 @@ The system aims to:
 ### Core Functionality
 
 #### 1. Quiz Management
-- Create new quizzes with customizable settings
-- Update existing quiz details
-- List all quizzes with pagination
-  - Support multiple question types:
-  - Multiple Choice Questions (MCQ)
-- Categorize questions by difficulty level
+- Generate quizzes based on selected topics
+- Categorize quizzes by difficulty levels:
+  - Beginner
+  - Intermediate
+  - Expert
+- Allow users to select the number of questions per quiz:
+  - 5 questions
+  - 10 questions
+  - 15 questions
+- Support Multiple Choice Questions (MCQ)
+- Provide real-time answer evaluation
+- Display instant quiz results after submission
+
+#### 2. Definition Management
+- Generate definitions for technical keywords
+- Generate definitions for non-technical keywords
+- Provide clear and concise explanations
+- Enable keyword search functionality
 
 #### 3. User Management
 - User registration and authentication
 - Role-based access control (ADMIN, USER)
 - User profile management
+
+#### 4. Blog Management
+- Create and publish blog posts
+- Edit and manage personal blogs
+- Share blogs with the QuizBot community
+- Browse and read community blogs
 
 #### 5. Result Management
 - Calculate scores automatically
@@ -134,6 +127,44 @@ The system aims to:
 ```
 http://localhost:8080/api/v1
 ```
+
+### End Points 
+
+- Quiz Controller -> DeepSeek Service
+
+| Endpooint | Method | Description | Request | Response
+|----------|----------|----------|----------|----------|
+| ``` /quiz/getquiz ``` | POST | Generate a new quiz based on topic, difficulty, and question count |JSON  + auth_token (Cookie) |List of QuizQuestionDTO |
+| ``` quiz/submit/{quizId} ``` | POST |Submit an answer for a quiz question |Path Variable: quizId + JSON  | QuizQuestionDTO with updated answer 
+
+- Describe Controller -> DeepSeek Service
+
+| Endpooint | Method | Description | Request | Response
+|----------|----------|----------|----------|----------|
+| ```/describe/getdescribe ``` | POST | Generate a short description for a given topic and save it for the user |JSON + auth_token (Cookie) |List of DescribeDto |
+
+
+- Blog Controller -> Blog Service
+
+| Endpooint | Method | Description | Request | Response
+|----------|----------|----------|----------|----------|
+| ``` /blog/upload ``` | POST | Create a New Blog | multipart/form-data → file, title, category, content + auth_token (Cookie) | Success/Failure message (JSON) |
+| ``` /blog/getuserblogs ``` | GET | Get blogs created by authenticated user |auth_token (Cookie) | List of BlogDto (JSON)
+| ``` /blog/updateblog/{id} ``` | PUT | Update existing blog |multipart/form-data → title, category, description, optional coverImage + auth_token (Cookie) |Success/Failure message (JSON) |
+| ``` /blog/blog/getall ```  | GET | Get all approved blogs | Non | List of approved blogs (JSON) |
+| ``` /blog/getnotapproved ``` | GET | Get all pending blogs (Admin) | None | List of pending blogs (JSON) |
+| ``` /blog/approve/{id} ```  | PUT | Approve a blog (Admin) |Path Variable: blog ID| Success message (JSON) |
+| ``` /blog/decline/{id} ``` | PUT 1 C2 | Decline a blog (Admin) | Path Variable: blog ID | Success message (JSON) |
+
+- User Controller -> User Service
+
+| Endpooint | Method | Description | Request | Response
+|----------|----------|----------|----------|----------|
+| ``` /users/createuser ``` | POST | Create a new user and return JWT in cookie | JSON  | JSON → Cookie |
+| ``` /users/getbytoken ``` | GET | Get user info from JWT token | Cookie → auth_token |JSON → UserResponseDTO |
+| ```/users/getquestions``` | GET | Get all previous quizzes taken by the authenticated user | Cookie → auth_token |List of Quiz |
+| ```/users/getstats``` | GET |Get user statistics: days logged in, questions covered, topics covered | Cookie → auth_token |UserStatsDTO |
+
 
 ---
 
