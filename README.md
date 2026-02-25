@@ -27,9 +27,7 @@ The system aims to:
 
 ---
 
-## System Architecture
-
-<img width="922" height="728" alt="Image" src="https://github.com/user-attachments/assets/ecd140b3-caaf-4622-93d2-d4c62fd70fa6" />
+<img width="1140" height="577" alt="Image" src="https://github.com/user-attachments/assets/76015cdf-38b8-4c44-ae52-b115a67eb004" />
 
 
 ### Design Patterns
