@@ -7,7 +7,6 @@ import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.DeepSeekService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -20,14 +19,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class QuizController {
 
-    @Autowired
-    private DeepSeekService deepSeekService;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private UserService userService;
+    private final DeepSeekService deepSeekService;
+    private final JWTService jwtService;
+    private final  UserService userService;
 
     @PostMapping("/getquiz")
     public ResponseEntity<?> generatedQuiz(@RequestBody QuizRequestDTO request,

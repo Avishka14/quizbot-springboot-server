@@ -10,6 +10,7 @@ import com.quizbot.quizbot_springboot_server.repository.QuizRepo;
 import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.TypeToken;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,27 +24,16 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Service
+@RequiredArgsConstructor
 public class UserService {
-    @Autowired
-    private UserRepo userRepo;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private RoleRepo roleRepo;
-
-    @Autowired
-    private QuizRepo quizRepo;
-
-    @Autowired
-    private DescribeRepo describeRepo;
+    private final UserRepo userRepo;
+    private final ModelMapper modelMapper;
+    private final PasswordEncoder passwordEncoder;
+    private final JWTService jwtService;
+    private final RoleRepo roleRepo;
+    private final QuizRepo quizRepo;
+    private final DescribeRepo describeRepo;
 
     private static final Logger logger = LoggerFactory.getLogger(UserService.class);
 

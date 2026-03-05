@@ -1,7 +1,6 @@
 package com.quizbot.quizbot_springboot_server.controller;
 
 import com.quizbot.quizbot_springboot_server.dto.LoginRequestDTO;
-import com.quizbot.quizbot_springboot_server.dto.UserDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.dto.UserStatsDTO;
 import com.quizbot.quizbot_springboot_server.model.Quiz;
@@ -9,11 +8,10 @@ import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.CookieService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,16 +25,12 @@ import java.util.Map;
 @RestController
 @RequestMapping("api/v1/users")
 @CrossOrigin
+@RequiredArgsConstructor
 public class UserController {
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private CookieService cookieService;
-
-    @Autowired
-    private JWTService jwtService;
+    private final UserService userService;
+    private final CookieService cookieService;
+    private final JWTService jwtService;
 
     private static final Logger logger = LoggerFactory.getLogger(UserController.class);
 

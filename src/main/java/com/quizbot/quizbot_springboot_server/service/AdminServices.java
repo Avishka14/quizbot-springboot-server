@@ -7,6 +7,7 @@ import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,19 +18,13 @@ import java.time.LocalDate;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class AdminServices {
 
-    @Autowired
-    private UserRepo userRepo;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private RoleRepo roleRepo;
+    private final UserRepo userRepo;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepo roleRepo;
 
     private static final Logger logger = LoggerFactory.getLogger(AdminServices.class);
 

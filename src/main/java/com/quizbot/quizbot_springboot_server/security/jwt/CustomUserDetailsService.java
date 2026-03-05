@@ -3,6 +3,7 @@ package com.quizbot.quizbot_springboot_server.security.jwt;
 import com.quizbot.quizbot_springboot_server.model.User;
 import com.quizbot.quizbot_springboot_server.repository.RoleRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,11 +14,10 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 
 @Service
+@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
-    @Autowired
-    private UserRepo userRepo;
-
+    private final UserRepo userRepo;
 
     @Override
     public UserDetails loadUserByUsername(String email) {
