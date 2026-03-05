@@ -3,11 +3,9 @@ package com.quizbot.quizbot_springboot_server.controller;
 import com.quizbot.quizbot_springboot_server.dto.DescribeDto;
 import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
-import com.quizbot.quizbot_springboot_server.service.CookieService;
 import com.quizbot.quizbot_springboot_server.service.DeepSeekService;
 import com.quizbot.quizbot_springboot_server.service.UserService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,12 +19,9 @@ import java.util.Map;
 public class DescribeController {
 
     private final DeepSeekService deepSeekService;
+    private final UserService userService;
+    private final JWTService jwtService;
 
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private JWTService jwtService;
 
     @PostMapping("/getdescribe")
     public ResponseEntity<?> generateDescribe(@RequestBody Map<String , String> request ,

@@ -9,6 +9,7 @@ import com.quizbot.quizbot_springboot_server.model.Describe;
 import com.quizbot.quizbot_springboot_server.model.Quiz;
 import com.quizbot.quizbot_springboot_server.repository.DescribeRepo;
 import com.quizbot.quizbot_springboot_server.repository.QuizRepo;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class DeepSeekService {
 
     private final RestTemplate restTemplate;
@@ -38,14 +40,6 @@ public class DeepSeekService {
     private String model;
 
     private static final Logger logger = LoggerFactory.getLogger(DeepSeekService.class);
-
-    public DeepSeekService(RestTemplate restTemplate,
-                           QuizRepo quizRepo,
-                           DescribeRepo describeRepo) {
-        this.restTemplate = restTemplate;
-        this.quizRepo = quizRepo;
-        this.describeRepo = describeRepo;
-    }
 
     public List<QuizQuestionDTO> generateQuizAndSave(String topic, String difficulty, int count, Long userId) {
         String prompt = "Generate " + count + " multiple-choice quiz questions on: " + topic +

@@ -9,6 +9,7 @@ import com.quizbot.quizbot_springboot_server.repository.BlogRepo;
 import com.quizbot.quizbot_springboot_server.repository.UserRepo;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.utility.HelperMethods;
+import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,22 +28,15 @@ import java.util.stream.Collectors;
 
 
 @Service
+@RequiredArgsConstructor
 public class BlogServices {
 
-    @Autowired
-    private BlogRepo blogRepo;
 
-    @Autowired
-    private ModelMapper modelMapper;
-
-    @Autowired
-    private HelperMethods helperMethods;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private UserRepo userRepo;
+    private final BlogRepo blogRepo;
+    private final ModelMapper modelMapper;
+    private final HelperMethods helperMethods;
+    private final JWTService jwtService;
+    private final UserRepo userRepo;
 
     private final String uploadDir = "uploads";
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;

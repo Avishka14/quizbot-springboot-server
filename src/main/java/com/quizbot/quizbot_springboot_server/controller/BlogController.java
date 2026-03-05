@@ -6,6 +6,8 @@ import com.quizbot.quizbot_springboot_server.dto.UserResponseDTO;
 import com.quizbot.quizbot_springboot_server.security.jwt.JWTService;
 import com.quizbot.quizbot_springboot_server.service.BlogServices;
 import com.quizbot.quizbot_springboot_server.service.UserService;
+import io.jsonwebtoken.Jwt;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,18 +21,15 @@ import java.util.*;
 @RestController
 @RequestMapping("api/v1/blog")
 @CrossOrigin
+@RequiredArgsConstructor
 public class BlogController {
 
-    @Autowired
-    private BlogServices blogServices;
-
-    @Autowired
-    private JWTService jwtService;
-
-    @Autowired
-    private UserService userService;
+    private final BlogServices blogServices;
+    private final JWTService jwtService;
+    private final UserService userService;
 
     private static final Logger logger = LoggerFactory.getLogger(BlogController.class);
+
 
     @PostMapping("/upload")
     public ResponseEntity<?> handleBlogCreate(
